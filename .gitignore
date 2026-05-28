@@ -1,0 +1,23 @@
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# DBeaver / local configs
+.metadata/
+.dbeaver/
+*.bak
