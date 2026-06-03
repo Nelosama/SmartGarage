@@ -1,0 +1,64 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+model Cliente {
+  id        Int        @id @default(autoincrement())
+  nombre    String
+  telefono  String
+  email     String     @unique
+  direccion String
+  vehiculos Vehiculo[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("clientes")
+}
+
+model Vehiculo {
+  id        Int      @id @default(autoincrement())
+  placa     String   @unique
+  marca     String
+  modelo    String
+  anio      Int
+  clienteId Int
+  cliente   Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  ordenes   Orden[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("vehiculos")
+}
+
+model Orden {
+  id                  Int                 @id @default(autoincrement())
+  servicio            String
+  diagnostico         String
+  estado              String              // Pendiente, En progreso, Completado
+  fecha               DateTime            @default(now())
+  vehiculoId          Int
+  vehiculo            Vehiculo            @relation(fields: [vehiculoId], references: [id], onDelete: Cascade)
+  serviciosRealizados ServicioRealizado[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@map("ordenes")
+}
+
+model ServicioRealizado {
+  id          Int      @id @default(autoincrement())
+  descripcion String
+  repuesto    String
+  costo       Float
+  ordenId     Int
+  orden       Orden    @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("servicios_realizados")
+}
