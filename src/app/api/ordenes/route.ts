@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const query = searchParams.get('q') || ''
     const estado = searchParams.get('estado') || ''
 
-    const whereClause: any = {}
+    const whereClause: Record<string, unknown> = {}
 
     if (vehiculoIdParam) {
       const vehiculoId = parseInt(vehiculoIdParam, 10)
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json(ordenes)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching orders:', error)
     return NextResponse.json({ error: 'Error al obtener las órdenes' }, { status: 500 })
   }
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(orden, { status: 201 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating order:', error)
     return NextResponse.json({ error: 'Error al crear la orden' }, { status: 500 })
   }

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     const ordenIdParam = searchParams.get('ordenId')
     const query = searchParams.get('q') || ''
 
-    const whereClause: any = {}
+    const whereClause: Record<string, unknown> = {}
 
     if (ordenIdParam) {
       const ordenId = parseInt(ordenIdParam, 10)
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json(servicios)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching performed services:', error)
     return NextResponse.json({ error: 'Error al obtener los servicios realizados' }, { status: 500 })
   }
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(servicioRealizado, { status: 201 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating performed service:', error)
     return NextResponse.json({ error: 'Error al crear el servicio realizado' }, { status: 500 })
   }

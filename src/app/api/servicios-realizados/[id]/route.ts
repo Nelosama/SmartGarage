@@ -33,7 +33,7 @@ export async function GET(
     }
 
     return NextResponse.json(servicio)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching service details:', error)
     return NextResponse.json({ error: 'Error al obtener el servicio realizado' }, { status: 500 })
   }
@@ -79,7 +79,7 @@ export async function PUT(
     })
 
     return NextResponse.json(updatedServicio)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating service:', error)
     return NextResponse.json({ error: 'Error al actualizar el servicio realizado' }, { status: 500 })
   }
@@ -102,7 +102,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Servicio realizado eliminado correctamente' })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting service:', error)
     return NextResponse.json({ error: 'Error al eliminar el servicio realizado' }, { status: 500 })
   }

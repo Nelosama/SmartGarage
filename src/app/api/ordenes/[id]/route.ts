@@ -30,7 +30,7 @@ export async function GET(
     }
 
     return NextResponse.json(orden)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching order details:', error)
     return NextResponse.json({ error: 'Error al obtener la orden' }, { status: 500 })
   }
@@ -84,7 +84,7 @@ export async function PUT(
     })
 
     return NextResponse.json(updatedOrden)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating order:', error)
     return NextResponse.json({ error: 'Error al actualizar la orden' }, { status: 500 })
   }
@@ -107,7 +107,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Orden de trabajo eliminada correctamente' })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting order:', error)
     return NextResponse.json({ error: 'Error al eliminar la orden' }, { status: 500 })
   }

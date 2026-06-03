@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json(clientes)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching clients:', error)
     return NextResponse.json({ error: 'Error al obtener los clientes' }, { status: 500 })
   }
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(cliente, { status: 201 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating client:', error)
     return NextResponse.json({ error: 'Error al crear el cliente' }, { status: 500 })
   }

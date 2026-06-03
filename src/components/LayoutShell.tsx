@@ -27,15 +27,20 @@ export default function LayoutShell({ children }: LayoutShellProps) {
 
   useEffect(() => {
     // Check local storage or system preference
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
-    if (savedTheme) {
-      setTheme(savedTheme)
-      document.documentElement.classList.toggle('dark', savedTheme === 'dark')
-    } else {
-      // Default to dark mode for rich aesthetics
-      setTheme('dark')
-      document.documentElement.classList.add('dark')
+    const initTheme = () => {
+      const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
+      if (savedTheme) {
+        setTheme(savedTheme)
+        document.documentElement.classList.toggle('dark', savedTheme === 'dark')
+      } else {
+        // Default to dark mode for rich aesthetics
+        setTheme('dark')
+        document.documentElement.classList.add('dark')
+      }
     }
+
+    // Using a microtask to avoid synchronous state update in effect
+    void Promise.resolve().then(initTheme)
   }, [])
 
   const toggleTheme = () => {

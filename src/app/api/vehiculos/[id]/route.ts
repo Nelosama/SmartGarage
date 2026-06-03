@@ -26,7 +26,7 @@ export async function GET(
     }
 
     return NextResponse.json(vehiculo)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching vehicle details:', error)
     return NextResponse.json({ error: 'Error al obtener el vehículo' }, { status: 500 })
   }
@@ -85,7 +85,7 @@ export async function PUT(
     })
 
     return NextResponse.json(updatedVehiculo)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating vehicle:', error)
     return NextResponse.json({ error: 'Error al actualizar el vehículo' }, { status: 500 })
   }
@@ -108,7 +108,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Vehículo eliminado correctamente' })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting vehicle:', error)
     return NextResponse.json({ error: 'Error al eliminar el vehículo' }, { status: 500 })
   }

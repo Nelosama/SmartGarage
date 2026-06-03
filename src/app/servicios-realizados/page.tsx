@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, Suspense } from 'react'
+import React, { useState, useEffect, Suspense, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { 
   Plus, 
@@ -9,14 +9,12 @@ import {
   Trash2, 
   Loader2, 
   ClipboardList,
-  Wrench,
   DollarSign,
   Package,
   X,
   AlertCircle,
   ArrowLeft
 } from 'lucide-react'
-import Link from 'next/link'
 
 interface Vehiculo {
   placa: string
@@ -68,7 +66,7 @@ function ServiciosRealizadosContent() {
   const [formError, setFormError] = useState<string | null>(null)
 
   // Fetch performed services and orders
-  const fetchData = async (query = '') => {
+  const fetchData = useCallback(async (query = '') => {
     try {
       setLoading(true)
       const servURL = `/api/servicios-realizados${filterOrdenId ? `?ordenId=${filterOrdenId}` : ''}${query ? `${filterOrdenId ? '&' : '?'}q=${encodeURIComponent(query)}` : ''}`
@@ -86,7 +84,7 @@ function ServiciosRealizadosContent() {
       setServicios(servData)
       setOrdenes(ordData)
       setError(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
       setError('No se pudieron cargar los servicios realizados de la base de datos local. Usando datos demo.')
       
@@ -162,11 +160,14 @@ function ServiciosRealizadosContent() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterOrdenId])
 
   useEffect(() => {
-    fetchData()
-  }, [filterOrdenId])
+    const init = async () => {
+      await fetchData()
+    }
+    void init()
+  }, [fetchData])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -229,9 +230,10 @@ function ServiciosRealizadosContent() {
 
       setIsModalOpen(false)
       fetchData(search)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      setFormError(err.message || 'Error en la conexión. Guardado simulado en modo demo.')
+      const message = err instanceof Error ? err.message : 'Error en la conexión. Guardado simulado en modo demo.'
+      setFormError(message)
 
       // Simulate client side update in demo mode
       const selectedOrdObj = ordenes.find(o => o.id === parseInt(ordenId, 10)) || {
@@ -282,9 +284,10 @@ function ServiciosRealizadosContent() {
       }
 
       fetchData(search)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      alert(err.message || 'Error al eliminar. Simulado en modo demo.')
+      const message = err instanceof Error ? err.message : 'Error al eliminar. Simulado en modo demo.'
+      alert(message)
       setServicios(prev => prev.filter(s => s.id !== id))
     }
   }

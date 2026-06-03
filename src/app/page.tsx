@@ -5,16 +5,91 @@ import {
   Car, 
   Wrench, 
   TrendingUp, 
-  Clock, 
-  CheckCircle2, 
   AlertTriangle,
   ArrowRight,
-  Plus,
   ClipboardList
 } from 'lucide-react'
 
 // Force dynamic rendering to always query fresh database stats
 export const dynamic = 'force-dynamic'
+
+interface RecentOrder {
+  id: number
+  servicio: string
+  estado: string
+  fecha: Date | string
+  vehiculo: {
+    placa: string
+    marca: string
+    modelo: string
+    cliente: {
+      nombre: string
+    }
+  }
+}
+
+const getDemoOrders = (): RecentOrder[] => [
+  {
+    id: 1,
+    servicio: 'Alineación y Balanceo',
+    estado: 'En progreso',
+    fecha: new Date(),
+    vehiculo: {
+      placa: 'MEC-1234',
+      marca: 'Toyota',
+      modelo: 'Hilux',
+      cliente: { nombre: 'Juan Pérez' }
+    }
+  },
+  {
+    id: 2,
+    servicio: 'Cambio de Aceite y Filtros',
+    estado: 'Pendiente',
+    fecha: new Date(Date.now() - 3600000 * 2),
+    vehiculo: {
+      placa: 'ABC-7890',
+      marca: 'Honda',
+      modelo: 'Civic',
+      cliente: { nombre: 'María Rodríguez' }
+    }
+  },
+  {
+    id: 3,
+    servicio: 'Frenos y Rectificación de Discos',
+    estado: 'Completado',
+    fecha: new Date(Date.now() - 3600000 * 5),
+    vehiculo: {
+      placa: 'XYZ-5544',
+      marca: 'Ford',
+      modelo: 'Ranger',
+      cliente: { nombre: 'Carlos Mendoza' }
+    }
+  },
+  {
+    id: 4,
+    servicio: 'Reparación de Suspensión Delantera',
+    estado: 'En progreso',
+    fecha: new Date(Date.now() - 3600000 * 24),
+    vehiculo: {
+      placa: 'PQR-9988',
+      marca: 'Hyundai',
+      modelo: 'Tucson',
+      cliente: { nombre: 'Ana Gómez' }
+    }
+  },
+  {
+    id: 5,
+    servicio: 'Diagnóstico Eléctrico de Motor',
+    estado: 'Completado',
+    fecha: new Date(Date.now() - 3600000 * 48),
+    vehiculo: {
+      placa: 'BMW-320I',
+      marca: 'BMW',
+      modelo: 'Serie 3',
+      cliente: { nombre: 'Luis Valenzuela' }
+    }
+  }
+]
 
 export default async function DashboardPage() {
   let stats = {
@@ -26,7 +101,7 @@ export default async function DashboardPage() {
     recaudado: 0
   }
   
-  let recentOrders: any[] = []
+  let recentOrders: RecentOrder[] = []
   let isDemoData = false
 
   try {
@@ -82,68 +157,7 @@ export default async function DashboardPage() {
       recaudado: 14250.75
     }
 
-    recentOrders = [
-      {
-        id: 1,
-        servicio: 'Alineación y Balanceo',
-        estado: 'En progreso',
-        fecha: new Date(),
-        vehiculo: {
-          placa: 'MEC-1234',
-          marca: 'Toyota',
-          modelo: 'Hilux',
-          cliente: { nombre: 'Juan Pérez' }
-        }
-      },
-      {
-        id: 2,
-        servicio: 'Cambio de Aceite y Filtros',
-        estado: 'Pendiente',
-        fecha: new Date(Date.now() - 3600000 * 2),
-        vehiculo: {
-          placa: 'ABC-7890',
-          marca: 'Honda',
-          modelo: 'Civic',
-          cliente: { nombre: 'María Rodríguez' }
-        }
-      },
-      {
-        id: 3,
-        servicio: 'Frenos y Rectificación de Discos',
-        estado: 'Completado',
-        fecha: new Date(Date.now() - 3600000 * 5),
-        vehiculo: {
-          placa: 'XYZ-5544',
-          marca: 'Ford',
-          modelo: 'Ranger',
-          cliente: { nombre: 'Carlos Mendoza' }
-        }
-      },
-      {
-        id: 4,
-        servicio: 'Reparación de Suspensión Delantera',
-        estado: 'En progreso',
-        fecha: new Date(Date.now() - 3600000 * 24),
-        vehiculo: {
-          placa: 'PQR-9988',
-          marca: 'Hyundai',
-          modelo: 'Tucson',
-          cliente: { nombre: 'Ana Gómez' }
-        }
-      },
-      {
-        id: 5,
-        servicio: 'Diagnóstico Eléctrico de Motor',
-        estado: 'Completado',
-        fecha: new Date(Date.now() - 3600000 * 48),
-        vehiculo: {
-          placa: 'BMW-320I',
-          marca: 'BMW',
-          modelo: 'Serie 3',
-          cliente: { nombre: 'Luis Valenzuela' }
-        }
-      }
-    ]
+    recentOrders = getDemoOrders()
   }
 
   const activeOrdersCount = stats.pendientes + stats.enProgreso

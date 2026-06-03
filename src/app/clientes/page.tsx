@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  Plus, 
   Search, 
   Edit2, 
   Trash2, 
@@ -55,7 +54,7 @@ export default function ClientesPage() {
       const data = await res.json()
       setClientes(data)
       setError(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
       setError('No se pudieron cargar los clientes. Usando datos demo locales.')
       // Fallback demo data if PostgreSQL is not running
@@ -71,7 +70,10 @@ export default function ClientesPage() {
   }
 
   useEffect(() => {
-    fetchClientes()
+    const init = async () => {
+      await fetchClientes()
+    }
+    void init()
   }, [])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,9 +133,10 @@ export default function ClientesPage() {
 
       setIsModalOpen(false)
       fetchClientes(search)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      setFormError(err.message || 'Error en la conexión. Guardado simulado en modo demo.')
+      const message = err instanceof Error ? err.message : 'Error en la conexión. Guardado simulado en modo demo.'
+      setFormError(message)
       
       // Simulate client side update for demo mode if fetch fails
       if (modalMode === 'create') {
@@ -163,9 +166,10 @@ export default function ClientesPage() {
       }
 
       fetchClientes(search)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      alert(err.message || 'Error al eliminar. Simulado en modo demo.')
+      const message = err instanceof Error ? err.message : 'Error al eliminar. Simulado en modo demo.'
+      alert(message)
       // Simulate client side delete
       setClientes(prev => prev.filter(c => c.id !== id))
     }

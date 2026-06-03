@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  Plus, 
   Search, 
   Edit2, 
   Trash2, 
@@ -10,7 +9,6 @@ import {
   Car,
   User,
   Calendar,
-  Tag,
   X,
   AlertCircle
 } from 'lucide-react'
@@ -69,7 +67,7 @@ export default function VehiculosPage() {
       setVehiculos(vehData)
       setClientes(cliData)
       setError(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
       setError('No se pudieron cargar los datos de la base de datos local. Usando datos demo.')
       
@@ -93,7 +91,10 @@ export default function VehiculosPage() {
   }
 
   useEffect(() => {
-    fetchData()
+    const init = async () => {
+      await fetchData()
+    }
+    void init()
   }, [])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,9 +161,10 @@ export default function VehiculosPage() {
 
       setIsModalOpen(false)
       fetchData(search)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      setFormError(err.message || 'Error en la conexión. Guardado simulado en modo demo.')
+      const message = err instanceof Error ? err.message : 'Error en la conexión. Guardado simulado en modo demo.'
+      setFormError(message)
 
       // Simulate client side update in demo mode
       const selectedClientObj = clientes.find(c => c.id === parseInt(clienteId, 10)) || { id: 1, nombre: 'Juan Pérez' }
@@ -209,9 +211,10 @@ export default function VehiculosPage() {
       }
 
       fetchData(search)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      alert(err.message || 'Error al eliminar. Simulado en modo demo.')
+      const message = err instanceof Error ? err.message : 'Error al eliminar. Simulado en modo demo.'
+      alert(message)
       setVehiculos(prev => prev.filter(v => v.id !== id))
     }
   }

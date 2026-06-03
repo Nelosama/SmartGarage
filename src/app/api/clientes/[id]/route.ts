@@ -25,7 +25,7 @@ export async function GET(
     }
 
     return NextResponse.json(cliente)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching client details:', error)
     return NextResponse.json({ error: 'Error al obtener el cliente' }, { status: 500 })
   }
@@ -68,7 +68,7 @@ export async function PUT(
     })
 
     return NextResponse.json(updatedCliente)
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating client:', error)
     return NextResponse.json({ error: 'Error al actualizar el cliente' }, { status: 500 })
   }
@@ -91,7 +91,7 @@ export async function DELETE(
     })
 
     return NextResponse.json({ message: 'Cliente eliminado correctamente' })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error deleting client:', error)
     return NextResponse.json({ error: 'Error al eliminar el cliente' }, { status: 500 })
   }

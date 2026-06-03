@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  Plus, 
   Search, 
   Edit2, 
   Trash2, 
@@ -90,7 +89,7 @@ export default function OrdenesPage() {
       setOrdenes(ordData)
       setVehiculos(vehData)
       setError(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
       setError('No se pudieron cargar los datos de la base de datos local. Usando datos demo.')
       
@@ -145,7 +144,10 @@ export default function OrdenesPage() {
   }
 
   useEffect(() => {
-    fetchData()
+    const init = async () => {
+      await fetchData()
+    }
+    void init()
   }, [])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,9 +214,10 @@ export default function OrdenesPage() {
 
       setIsModalOpen(false)
       fetchData(search)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      setFormError(err.message || 'Error en la conexión. Guardado simulado en modo demo.')
+      const message = err instanceof Error ? err.message : 'Error en la conexión. Guardado simulado en modo demo.'
+      setFormError(message)
 
       // Simulate client side update in demo mode
       const selectedVehObj = vehiculos.find(v => v.id === parseInt(vehiculoId, 10)) || {
@@ -271,7 +274,7 @@ export default function OrdenesPage() {
 
       if (!res.ok) throw new Error('Error al actualizar el estado')
       fetchData(search)
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err)
       // Simulate state update
       setOrdenes(prev => prev.map(o => o.id === orden.id ? { ...o, estado: newStatus } : o))
@@ -292,9 +295,10 @@ export default function OrdenesPage() {
       }
 
       fetchData(search)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      alert(err.message || 'Error al eliminar. Simulado en modo demo.')
+      const message = err instanceof Error ? err.message : 'Error al eliminar. Simulado en modo demo.'
+      alert(message)
       setOrdenes(prev => prev.filter(o => o.id !== id))
     }
   }
@@ -576,7 +580,7 @@ export default function OrdenesPage() {
                   </label>
                   <select
                     value={estado}
-                    onChange={(e) => setEstado(e.target.value as any)}
+                    onChange={(e) => setEstado(e.target.value as 'Pendiente' | 'En progreso' | 'Completado')}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-amber-500/25 dark:focus:ring-amber-400/25 text-sm transition-all"
                   >
                     <option value="Pendiente">Pendiente</option>
