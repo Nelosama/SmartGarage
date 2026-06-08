@@ -3,62 +3,232 @@ datasource db {
 }
 
 generator client {
-  provider   = "prisma-client-js"
-  engineType = "library"
+  provider = "prisma-client-js"
+}
+
+model Rol {
+  id_rol      Int       @id @default(autoincrement())
+  nombre_rol  String    @unique @db.VarChar(50)
+  descripcion String?
+  usuarios    Usuario[]
+
+  @@map("roles")
+}
+
+model Usuario {
+  id_usuario      Int                    @id @default(autoincrement())
+  id_rol          Int
+  nombre          String                 @db.VarChar(120)
+  correo          String                 @unique @db.VarChar(150)
+  password_hash   String                 @db.VarChar(255)
+  telefono        String?                @db.VarChar(25)
+  estado          String                 @default("Activo") @db.VarChar(20)
+  fecha_creacion  DateTime               @default(now()) @db.Timestamp(6)
+  rol             Rol                    @relation(fields: [id_rol], references: [id_rol], onUpdate: Cascade, onDelete: Restrict)
+  cliente         Cliente?
+  mecanico        Mecanico?
+  historial_orden HistorialEstadoOrden[]
+
+  @@map("usuarios")
 }
 
 model Cliente {
-  id        Int        @id @default(autoincrement())
-  nombre    String
-  telefono  String
-  email     String     @unique
-  direccion String
-  vehiculos Vehiculo[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id_cliente     Int            @id @default(autoincrement())
+  id_usuario     Int            @unique
+  identidad      String?        @unique @db.VarChar(30)
+  direccion      String?
+  fecha_registro DateTime       @default(now()) @db.Date
+  usuario        Usuario        @relation(fields: [id_usuario], references: [id_usuario], onUpdate: Cascade, onDelete: Cascade)
+  vehiculos      Vehiculo[]
+  ordenes        OrdenTrabajo[]
 
   @@map("clientes")
 }
 
-model Vehiculo {
-  id        Int      @id @default(autoincrement())
-  placa     String   @unique
-  marca     String
-  modelo    String
-  anio      Int
-  clienteId Int
-  cliente   Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  ordenes   Orden[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Mecanico {
+  id_mecanico  Int            @id @default(autoincrement())
+  id_usuario   Int            @unique
+  especialidad String?        @db.VarChar(100)
+  estado       String         @default("Disponible") @db.VarChar(20)
+  usuario      Usuario        @relation(fields: [id_usuario], references: [id_usuario], onUpdate: Cascade, onDelete: Cascade)
+  ordenes      OrdenTrabajo[]
 
+  @@map("mecanicos")
+}
+
+model Vehiculo {
+  id_vehiculo        Int                   @id @default(autoincrement())
+  id_cliente         Int
+  placa              String                @unique @db.VarChar(20)
+  marca              String                @db.VarChar(60)
+  modelo             String                @db.VarChar(60)
+  anio               Int?
+  color              String?               @db.VarChar(40)
+  vin                String?               @db.VarChar(50)
+  tipo_combustible   String?               @db.VarChar(30)
+  kilometraje_actual Int                   @default(0)
+  fecha_registro     DateTime              @default(now()) @db.Date
+  cliente            Cliente               @relation(fields: [id_cliente], references: [id_cliente], onUpdate: Cascade, onDelete: Cascade)
+  ordenes            OrdenTrabajo[]
+  alertas            AlertaMantenimiento[]
+
+  @@unique([id_vehiculo, id_cliente])
   @@map("vehiculos")
 }
 
-model Orden {
-  id                  Int                 @id @default(autoincrement())
-  servicio            String
-  diagnostico         String
-  estado              String              // Pendiente, En progreso, Completado
-  fecha               DateTime            @default(now())
-  vehiculoId          Int
-  vehiculo            Vehiculo            @relation(fields: [vehiculoId], references: [id], onDelete: Cascade)
-  serviciosRealizados ServicioRealizado[]
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
+model EstadoOrden {
+  id_estado     Int                    @id @default(autoincrement())
+  nombre_estado String                 @unique @db.VarChar(50)
+  descripcion   String?
+  ordenes       OrdenTrabajo[]
+  historial     HistorialEstadoOrden[]
 
-  @@map("ordenes")
+  @@map("estados_orden")
 }
 
-model ServicioRealizado {
-  id          Int      @id @default(autoincrement())
-  descripcion String
-  repuesto    String
-  costo       Float
-  ordenId     Int
-  orden       Orden    @relation(fields: [ordenId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Servicio {
+  id_servicio           Int                   @id @default(autoincrement())
+  nombre_servicio       String                @unique @db.VarChar(100)
+  descripcion           String?
+  precio_base           Decimal               @default(0) @db.Decimal(10, 2)
+  duracion_estimada_min Int?
+  intervalo_km          Int?
+  intervalo_meses       Int?
+  estado                String                @default("Activo") @db.VarChar(20)
+  orden_servicios       OrdenServicio[]
+  alertas               AlertaMantenimiento[]
 
-  @@map("servicios_realizados")
+  @@map("servicios")
+}
+
+model Repuesto {
+  id_repuesto     Int             @id @default(autoincrement())
+  nombre_repuesto String          @db.VarChar(100)
+  marca           String?         @db.VarChar(80)
+  descripcion     String?
+  stock           Int             @default(0)
+  precio_unitario Decimal         @default(0) @db.Decimal(10, 2)
+  stock_minimo    Int             @default(0)
+  estado          String          @default("Activo") @db.VarChar(20)
+  orden_repuestos OrdenRepuesto[]
+
+  @@map("repuestos")
+}
+
+model OrdenTrabajo {
+  id_orden               Int                    @id @default(autoincrement())
+  id_cliente             Int
+  id_vehiculo            Int
+  id_mecanico            Int?
+  id_estado_actual       Int
+  fecha_ingreso          DateTime               @default(now()) @db.Timestamp(6)
+  fecha_estimada_entrega DateTime?              @db.Timestamp(6)
+  fecha_entrega          DateTime?              @db.Timestamp(6)
+  kilometraje_ingreso    Int
+  motivo_ingreso         String
+  prioridad              String                 @default("Media") @db.VarChar(20)
+  observaciones          String?
+  cliente                Cliente                @relation(fields: [id_cliente], references: [id_cliente], onUpdate: Cascade, onDelete: Restrict)
+  vehiculo               Vehiculo               @relation(fields: [id_vehiculo, id_cliente], references: [id_vehiculo, id_cliente], onUpdate: Cascade, onDelete: Restrict)
+  mecanico               Mecanico?              @relation(fields: [id_mecanico], references: [id_mecanico], onUpdate: Cascade, onDelete: SetNull)
+  estado_actual          EstadoOrden            @relation(fields: [id_estado_actual], references: [id_estado], onUpdate: Cascade, onDelete: Restrict)
+  diagnostico            Diagnostico?
+  historial_estados      HistorialEstadoOrden[]
+  orden_servicios        OrdenServicio[]
+  orden_repuestos        OrdenRepuesto[]
+  factura                Factura?
+  alertas                AlertaMantenimiento[]
+
+  @@map("ordenes_trabajo")
+}
+
+model Diagnostico {
+  id_diagnostico    Int          @id @default(autoincrement())
+  id_orden          Int          @unique
+  falla_reportada   String
+  causa_detectada   String?
+  recomendacion     String?
+  observaciones     String?
+  fecha_diagnostico DateTime     @default(now()) @db.Timestamp(6)
+  orden             OrdenTrabajo @relation(fields: [id_orden], references: [id_orden], onUpdate: Cascade, onDelete: Cascade)
+
+  @@map("diagnosticos")
+}
+
+model HistorialEstadoOrden {
+  id_historial_estado Int          @id @default(autoincrement())
+  id_orden            Int
+  id_estado           Int
+  id_usuario          Int?
+  fecha_hora          DateTime     @default(now()) @db.Timestamp(6)
+  comentario          String?
+  orden               OrdenTrabajo @relation(fields: [id_orden], references: [id_orden], onUpdate: Cascade, onDelete: Cascade)
+  estado              EstadoOrden  @relation(fields: [id_estado], references: [id_estado], onUpdate: Cascade, onDelete: Restrict)
+  usuario             Usuario?     @relation(fields: [id_usuario], references: [id_usuario], onUpdate: Cascade, onDelete: SetNull)
+
+  @@map("historial_estados_orden")
+}
+
+model OrdenServicio {
+  id_orden_servicio Int          @id @default(autoincrement())
+  id_orden          Int
+  id_servicio       Int
+  cantidad          Int          @default(1)
+  precio_unitario   Decimal      @db.Decimal(10, 2)
+  subtotal          Decimal      @db.Decimal(10, 2)
+  observaciones     String?
+  orden             OrdenTrabajo @relation(fields: [id_orden], references: [id_orden], onUpdate: Cascade, onDelete: Cascade)
+  servicio          Servicio     @relation(fields: [id_servicio], references: [id_servicio], onUpdate: Cascade, onDelete: Restrict)
+
+  @@unique([id_orden, id_servicio])
+  @@map("orden_servicios")
+}
+
+model OrdenRepuesto {
+  id_orden_repuesto Int          @id @default(autoincrement())
+  id_orden          Int
+  id_repuesto       Int
+  cantidad          Int          @default(1)
+  precio_unitario   Decimal      @db.Decimal(10, 2)
+  subtotal          Decimal      @db.Decimal(10, 2)
+  orden             OrdenTrabajo @relation(fields: [id_orden], references: [id_orden], onUpdate: Cascade, onDelete: Cascade)
+  repuesto          Repuesto     @relation(fields: [id_repuesto], references: [id_repuesto], onUpdate: Cascade, onDelete: Restrict)
+
+  @@unique([id_orden, id_repuesto])
+  @@map("orden_repuestos")
+}
+
+model Factura {
+  id_factura         Int          @id @default(autoincrement())
+  id_orden           Int          @unique
+  numero_factura     String       @unique @db.VarChar(30)
+  fecha_emision      DateTime     @default(now()) @db.Timestamp(6)
+  subtotal_servicios Decimal      @default(0) @db.Decimal(10, 2)
+  subtotal_repuestos Decimal      @default(0) @db.Decimal(10, 2)
+  impuesto           Decimal      @default(0) @db.Decimal(10, 2)
+  descuento          Decimal      @default(0) @db.Decimal(10, 2)
+  total              Decimal      @default(0) @db.Decimal(10, 2)
+  estado_pago        String       @default("Pendiente") @db.VarChar(20)
+  metodo_pago        String?      @db.VarChar(30)
+  orden              OrdenTrabajo @relation(fields: [id_orden], references: [id_orden], onUpdate: Cascade, onDelete: Restrict)
+
+  @@map("facturas")
+}
+
+model AlertaMantenimiento {
+  id_alerta              Int           @id @default(autoincrement())
+  id_vehiculo            Int
+  id_servicio            Int
+  id_orden_origen        Int?
+  fecha_generada         DateTime      @default(now()) @db.Timestamp(6)
+  kilometraje_referencia Int?
+  kilometraje_objetivo   Int?
+  fecha_objetivo         DateTime?     @db.Date
+  mensaje                String
+  estado                 String        @default("Pendiente") @db.VarChar(20)
+  vehiculo               Vehiculo      @relation(fields: [id_vehiculo], references: [id_vehiculo], onUpdate: Cascade, onDelete: Cascade)
+  servicio               Servicio      @relation(fields: [id_servicio], references: [id_servicio], onUpdate: Cascade, onDelete: Restrict)
+  orden_origen           OrdenTrabajo? @relation(fields: [id_orden_origen], references: [id_orden], onUpdate: Cascade, onDelete: SetNull)
+
+  @@map("alertas_mantenimiento")
 }
