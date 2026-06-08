@@ -45,8 +45,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json(vehiculos)
   } catch (error: any) {
-    console.error('Error fetching vehicles:', error)
-    return NextResponse.json({ error: 'Error al obtener los vehículos' }, { status: 500 })
+    console.error('API Error /api/vehiculos:', error)
+    return NextResponse.json({
+      error: 'Error al obtener los vehículos',
+      details: error.message
+    }, { status: 500 })
   }
 }
 
@@ -66,7 +69,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Año o Cliente ID inválidos' }, { status: 400 })
     }
 
-    // Check if plate already exists
     const existing = await prisma.vehiculo.findUnique({
       where: { placa },
     })
@@ -98,7 +100,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(vehiculo, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating vehicle:', error)
-    return NextResponse.json({ error: 'Error al crear el vehículo' }, { status: 500 })
+    console.error('API Error /api/vehiculos POST:', error)
+    return NextResponse.json({
+      error: 'Error al crear el vehículo',
+      details: error.message
+    }, { status: 500 })
   }
 }

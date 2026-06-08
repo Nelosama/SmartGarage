@@ -13,15 +13,29 @@ export async function GET(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
-    const orden = await prisma.orden.findUnique({
-      where: { id },
+    const orden = await prisma.ordenTrabajo.findUnique({
+      where: { id_orden: id },
       include: {
         vehiculo: {
           include: {
-            cliente: true,
+            cliente: {
+              include: {
+                usuario: true
+              }
+            },
           },
         },
-        serviciosRealizados: true,
+        estado_actual: true,
+        orden_servicios: {
+          include: {
+            servicio: true
+          }
+        },
+        orden_repuestos: {
+          include: {
+            repuesto: true
+          }
+        }
       },
     })
 
@@ -31,7 +45,7 @@ export async function GET(
 
     return NextResponse.json(orden)
   } catch (error: any) {
-    console.error('Error fetching order details:', error)
+    console.error('API Error /api/ordenes/[id]:', error)
     return NextResponse.json({ error: 'Error al obtener la orden' }, { status: 500 })
   }
 }
@@ -49,43 +63,37 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { servicio, diagnostico, estado, fecha, vehiculoId } = body
+    const { motivo_ingreso, observaciones, id_estado_actual, id_mecanico, prioridad, kilometraje_ingreso } = body
 
-    if (!servicio || !diagnostico || !estado || !fecha || vehiculoId === undefined) {
-      return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
-    }
+    // Partial update support
+    const data: any = {}
+    if (motivo_ingreso) data.motivo_ingreso = motivo_ingreso
+    if (observaciones !== undefined) data.observaciones = observaciones
+    if (id_estado_actual) data.id_estado_actual = id_estado_actual
+    if (id_mecanico !== undefined) data.id_mecanico = id_mecanico
+    if (prioridad) data.prioridad = prioridad
+    if (kilometraje_ingreso !== undefined) data.kilometraje_ingreso = kilometraje_ingreso
 
-    const parsedVehiculoId = parseInt(vehiculoId, 10)
-
-    if (isNaN(parsedVehiculoId)) {
-      return NextResponse.json({ error: 'Vehículo ID inválido' }, { status: 400 })
-    }
-
-    if (!['Pendiente', 'En progreso', 'Completado'].includes(estado)) {
-      return NextResponse.json({ error: 'Estado inválido. Debe ser Pendiente, En progreso o Completado' }, { status: 400 })
-    }
-
-    const updatedOrden = await prisma.orden.update({
-      where: { id },
-      data: {
-        servicio,
-        diagnostico,
-        estado,
-        fecha: new Date(fecha),
-        vehiculoId: parsedVehiculoId,
-      },
+    const updatedOrden = await prisma.ordenTrabajo.update({
+      where: { id_orden: id },
+      data,
       include: {
         vehiculo: {
           include: {
-            cliente: true,
+            cliente: {
+              include: {
+                usuario: true
+              }
+            },
           },
         },
+        estado_actual: true
       },
     })
 
     return NextResponse.json(updatedOrden)
   } catch (error: any) {
-    console.error('Error updating order:', error)
+    console.error('API Error /api/ordenes/[id] PUT:', error)
     return NextResponse.json({ error: 'Error al actualizar la orden' }, { status: 500 })
   }
 }
@@ -102,13 +110,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
-    await prisma.orden.delete({
-      where: { id },
+    await prisma.ordenTrabajo.delete({
+      where: { id_orden: id },
     })
 
     return NextResponse.json({ message: 'Orden de trabajo eliminada correctamente' })
   } catch (error: any) {
-    console.error('Error deleting order:', error)
+    console.error('API Error /api/ordenes/[id] DELETE:', error)
     return NextResponse.json({ error: 'Error al eliminar la orden' }, { status: 500 })
   }
 }

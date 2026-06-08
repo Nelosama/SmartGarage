@@ -14,8 +14,9 @@ export async function GET(
     }
 
     const cliente = await prisma.cliente.findUnique({
-      where: { id },
+      where: { id_cliente: id },
       include: {
+        usuario: true,
         vehiculos: true,
       },
     })
@@ -24,9 +25,17 @@ export async function GET(
       return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
     }
 
-    return NextResponse.json(cliente)
+    return NextResponse.json({
+      id: cliente.id_cliente,
+      nombre: cliente.usuario.nombre,
+      email: cliente.usuario.correo,
+      telefono: cliente.usuario.telefono,
+      direccion: cliente.direccion,
+      identidad: cliente.identidad,
+      vehiculos: cliente.vehiculos
+    })
   } catch (error: any) {
-    console.error('Error fetching client details:', error)
+    console.error('API Error /api/clientes/[id]:', error)
     return NextResponse.json({ error: 'Error al obtener el cliente' }, { status: 500 })
   }
 }
@@ -44,33 +53,57 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { nombre, telefono, email, direccion } = body
+    const { nombre, telefono, email, direccion, identidad } = body
 
     if (!nombre || !telefono || !email || !direccion) {
       return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
     }
 
-    // Check if another client has this email
-    const existing = await prisma.cliente.findFirst({
+    // Check if another user has this email
+    const existingUsuario = await prisma.usuario.findFirst({
       where: {
-        email,
-        id: { not: id },
+        correo: email,
+        cliente: {
+          id_cliente: { not: id }
+        }
       },
     })
 
-    if (existing) {
+    if (existingUsuario) {
       return NextResponse.json({ error: 'Ya existe otro cliente con este correo electrónico' }, { status: 400 })
     }
 
-    const updatedCliente = await prisma.cliente.update({
-      where: { id },
-      data: { nombre, telefono, email, direccion },
+    const updatedCliente = await prisma.$transaction(async (tx) => {
+      const cliente = await tx.cliente.findUnique({
+        where: { id_cliente: id },
+        include: { usuario: true }
+      })
+
+      if (!cliente) throw new Error('Cliente no encontrado')
+
+      await tx.usuario.update({
+        where: { id_usuario: cliente.id_usuario },
+        data: {
+          nombre,
+          correo: email,
+          telefono
+        }
+      })
+
+      return await tx.cliente.update({
+        where: { id_cliente: id },
+        data: {
+          direccion,
+          identidad
+        },
+        include: { usuario: true }
+      })
     })
 
     return NextResponse.json(updatedCliente)
   } catch (error: any) {
-    console.error('Error updating client:', error)
-    return NextResponse.json({ error: 'Error al actualizar el cliente' }, { status: 500 })
+    console.error('API Error /api/clientes/[id] PUT:', error)
+    return NextResponse.json({ error: 'Error al actualizar el cliente', details: error.message }, { status: 500 })
   }
 }
 
@@ -86,13 +119,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
-    await prisma.cliente.delete({
-      where: { id },
+    // Find the user ID first to delete both (cascade might handle it but let's be sure)
+    const cliente = await prisma.cliente.findUnique({
+      where: { id_cliente: id }
     })
+
+    if (cliente) {
+      await prisma.usuario.delete({
+        where: { id_usuario: cliente.id_usuario },
+      })
+    }
 
     return NextResponse.json({ message: 'Cliente eliminado correctamente' })
   } catch (error: any) {
-    console.error('Error deleting client:', error)
+    console.error('API Error /api/clientes/[id] DELETE:', error)
     return NextResponse.json({ error: 'Error al eliminar el cliente' }, { status: 500 })
   }
 }

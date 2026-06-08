@@ -21,18 +21,22 @@ interface Cliente {
 }
 
 interface Vehiculo {
-  id: number
+  id_vehiculo: number
   placa: string
   marca: string
   modelo: string
   anio: number
-  clienteId: number
-  cliente: Cliente
+  id_cliente: number
+  cliente: {
+    usuario: {
+      nombre: string
+    }
+  }
 }
 
 export default function VehiculosPage() {
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
-  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [clientes, setClientes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -61,7 +65,10 @@ export default function VehiculosPage() {
         fetch('/api/clientes')
       ])
 
-      if (!vehRes.ok || !cliRes.ok) throw new Error('Error al conectar con el servidor')
+      if (!vehRes.ok || !cliRes.ok) {
+        const errData = await vehRes.json()
+        throw new Error(errData.details || errData.error || 'Error al conectar con el servidor')
+      }
 
       const vehData = await vehRes.json()
       const cliData = await cliRes.json()
@@ -71,22 +78,7 @@ export default function VehiculosPage() {
       setError(null)
     } catch (err: any) {
       console.error(err)
-      setError('No se pudieron cargar los datos de la base de datos local. Usando datos demo.')
-      
-      // Fallback demo data
-      setClientes([
-        { id: 1, nombre: 'Juan Pérez' },
-        { id: 2, nombre: 'María Rodríguez' },
-        { id: 3, nombre: 'Carlos Mendoza' },
-        { id: 4, nombre: 'Ana Gómez' }
-      ])
-
-      setVehiculos([
-        { id: 1, placa: 'MEC-1234', marca: 'Toyota', modelo: 'Hilux', anio: 2021, clienteId: 1, cliente: { id: 1, nombre: 'Juan Pérez' } },
-        { id: 2, placa: 'ABC-7890', marca: 'Honda', modelo: 'Civic', anio: 2018, clienteId: 2, cliente: { id: 2, nombre: 'María Rodríguez' } },
-        { id: 3, placa: 'XYZ-5544', marca: 'Ford', modelo: 'Ranger', anio: 2020, clienteId: 3, cliente: { id: 3, nombre: 'Carlos Mendoza' } },
-        { id: 4, placa: 'PQR-9988', marca: 'Hyundai', modelo: 'Tucson', anio: 2019, clienteId: 4, cliente: { id: 4, nombre: 'Ana Gómez' } }
-      ])
+      setError(`Error de base de datos: ${err.message}. Verifique su conexión en .env`)
     } finally {
       setLoading(false)
     }
@@ -121,7 +113,7 @@ export default function VehiculosPage() {
     setMarca(vehiculo.marca)
     setModelo(vehiculo.modelo)
     setAnio(vehiculo.anio)
-    setClienteId(vehiculo.clienteId.toString())
+    setClienteId(vehiculo.id_cliente.toString())
     setFormError(null)
     setIsModalOpen(true)
   }
@@ -137,7 +129,7 @@ export default function VehiculosPage() {
       setFormSubmitting(true)
       setFormError(null)
 
-      const url = modalMode === 'create' ? '/api/vehiculos' : `/api/vehiculos/${selectedVehiculo?.id}`
+      const url = modalMode === 'create' ? '/api/vehiculos' : `/api/vehiculos/${selectedVehiculo?.id_vehiculo}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
 
       const res = await fetch(url, {
@@ -155,41 +147,14 @@ export default function VehiculosPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Ocurrió un error al guardar el vehículo')
+        throw new Error(data.details || data.error || 'Ocurrió un error al guardar el vehículo')
       }
 
       setIsModalOpen(false)
       fetchData(search)
     } catch (err: any) {
       console.error(err)
-      setFormError(err.message || 'Error en la conexión. Guardado simulado en modo demo.')
-
-      // Simulate client side update in demo mode
-      const selectedClientObj = clientes.find(c => c.id === parseInt(clienteId, 10)) || { id: 1, nombre: 'Juan Pérez' }
-      if (modalMode === 'create') {
-        const mockNew = {
-          id: Date.now(),
-          placa,
-          marca,
-          modelo,
-          anio: parseInt(anio.toString(), 10),
-          clienteId: parseInt(clienteId, 10),
-          cliente: selectedClientObj
-        }
-        setVehiculos(prev => [...prev, mockNew])
-        setIsModalOpen(false)
-      } else if (modalMode === 'edit' && selectedVehiculo) {
-        setVehiculos(prev => prev.map(v => v.id === selectedVehiculo.id ? {
-          ...v,
-          placa,
-          marca,
-          modelo,
-          anio: parseInt(anio.toString(), 10),
-          clienteId: parseInt(clienteId, 10),
-          cliente: selectedClientObj
-        } : v))
-        setIsModalOpen(false)
-      }
+      setFormError(err.message)
     } finally {
       setFormSubmitting(false)
     }
@@ -205,14 +170,13 @@ export default function VehiculosPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Error al eliminar el vehículo')
+        throw new Error(data.details || data.error || 'Error al eliminar el vehículo')
       }
 
       fetchData(search)
     } catch (err: any) {
       console.error(err)
-      alert(err.message || 'Error al eliminar. Simulado en modo demo.')
-      setVehiculos(prev => prev.filter(v => v.id !== id))
+      alert(err.message)
     }
   }
 
@@ -263,7 +227,7 @@ export default function VehiculosPage() {
             <Loader2 className="h-8 w-8 text-indigo-600 dark:text-indigo-400 animate-spin" />
             <p className="text-xs text-slate-400 dark:text-slate-500">Cargando vehículos...</p>
           </div>
-        ) : vehiculos.length === 0 ? (
+        ) : (vehiculos.length === 0 && !loading) ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-4">
             <div className="h-12 w-12 rounded-2xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-400 dark:text-slate-600 mb-4">
               <Car className="h-6 w-6" />
@@ -286,7 +250,7 @@ export default function VehiculosPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {vehiculos.map((vehiculo) => (
-                  <tr key={vehiculo.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10 transition-colors">
+                  <tr key={vehiculo.id_vehiculo} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10 transition-colors">
                     <td className="py-4.5 px-6 font-mono font-bold text-slate-800 dark:text-slate-200">
                       <span className="bg-slate-100 dark:bg-slate-800/80 px-2 py-1 rounded-lg text-xs border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
                         {vehiculo.placa}
@@ -304,20 +268,20 @@ export default function VehiculosPage() {
                     <td className="py-4.5 px-6">
                       <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                         <User className="h-4 w-4 text-slate-400" />
-                        <span className="text-xs font-semibold">{vehiculo.cliente.nombre}</span>
+                        <span className="text-xs font-semibold">{vehiculo.cliente?.usuario?.nombre || 'Sin nombre'}</span>
                       </div>
                     </td>
                     <td className="py-4.5 px-6 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => openEditModal(vehiculo)}
-                          className="p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/20 transition-all cursor-pointer"
+                          className="p-2 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-blue-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/20 transition-all cursor-pointer"
                           title="Editar vehículo"
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(vehiculo.id)}
+                          onClick={() => handleDelete(vehiculo.id_vehiculo)}
                           className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-red-950/20 transition-all cursor-pointer"
                           title="Eliminar vehículo"
                         >

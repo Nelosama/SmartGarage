@@ -75,8 +75,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json(ordenes)
   } catch (error: any) {
-    console.error('Error fetching orders:', error)
-    return NextResponse.json({ error: 'Error al obtener las órdenes' }, { status: 500 })
+    console.error('API Error /api/ordenes:', error)
+    return NextResponse.json({
+      error: 'Error al obtener las órdenes',
+      details: error.message
+    }, { status: 500 })
   }
 }
 
@@ -125,7 +128,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(orden, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating order:', error)
-    return NextResponse.json({ error: 'Error al crear la orden' }, { status: 500 })
+    console.error('API Error /api/ordenes POST:', error)
+    return NextResponse.json({
+      error: 'Error al crear la orden',
+      details: error.message
+    }, { status: 500 })
   }
 }

@@ -31,7 +31,6 @@ export async function GET(request: Request) {
       },
     })
 
-    // Map to flatten the structure for the frontend if needed
     const flattenedClientes = clientes.map(c => ({
       id: c.id_cliente,
       nombre: c.usuario.nombre,
@@ -44,8 +43,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json(flattenedClientes)
   } catch (error: any) {
-    console.error('Error fetching clients:', error)
-    return NextResponse.json({ error: 'Error al obtener los clientes' }, { status: 500 })
+    console.error('API Error /api/clientes:', error)
+    return NextResponse.json({
+      error: 'Error al obtener los clientes',
+      details: error.message
+    }, { status: 500 })
   }
 }
 
@@ -58,7 +60,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
     }
 
-    // Check if client with this email already exists (via Usuario)
     const existingUsuario = await prisma.usuario.findUnique({
       where: { correo: email },
     })
@@ -67,7 +68,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Ya existe un usuario con este correo electrónico' }, { status: 400 })
     }
 
-    // Get or create a default Role for Cliente
     let rolCliente = await prisma.rol.findFirst({
       where: { nombre_rol: 'Cliente' }
     })
@@ -78,14 +78,13 @@ export async function POST(request: Request) {
       })
     }
 
-    // Create Usuario and Cliente in a transaction
     const result = await prisma.$transaction(async (tx) => {
       const usuario = await tx.usuario.create({
         data: {
           nombre,
           correo: email,
           telefono,
-          password_hash: 'temporalsync', // Placeholder
+          password_hash: 'temporalsync',
           id_rol: rolCliente!.id_rol,
           estado: 'Activo'
         }
@@ -107,7 +106,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json(result, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating client:', error)
-    return NextResponse.json({ error: 'Error al crear el cliente' }, { status: 500 })
+    console.error('API Error /api/clientes POST:', error)
+    return NextResponse.json({
+      error: 'Error al crear el cliente',
+      details: error.message
+    }, { status: 500 })
   }
 }

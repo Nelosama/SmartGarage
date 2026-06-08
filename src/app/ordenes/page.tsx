@@ -25,29 +25,27 @@ interface Cliente {
 }
 
 interface Vehiculo {
-  id: number
+  id_vehiculo: number
   placa: string
   marca: string
   modelo: string
-  cliente: Cliente
-}
-
-interface ServicioRealizado {
-  id: number
-  descripcion: string
-  repuesto: string
-  costo: number
+  cliente: {
+    usuario: {
+      nombre: string
+    }
+  }
 }
 
 interface Orden {
-  id: number
-  servicio: string
-  diagnostico: string
-  estado: 'Pendiente' | 'En progreso' | 'Completado'
-  fecha: string
-  vehiculoId: number
+  id_orden: number
+  motivo_ingreso: string
+  observaciones: string
+  estado_actual: {
+    nombre_estado: string
+  }
+  fecha_ingreso: string
+  id_vehiculo: number
   vehiculo: Vehiculo
-  serviciosRealizados?: ServicioRealizado[]
 }
 
 export default function OrdenesPage() {
@@ -82,7 +80,10 @@ export default function OrdenesPage() {
         fetch('/api/vehiculos')
       ])
 
-      if (!ordRes.ok || !vehRes.ok) throw new Error('Error al conectar con el servidor')
+      if (!ordRes.ok || !vehRes.ok) {
+        const errData = await ordRes.json()
+        throw new Error(errData.details || errData.error || 'Error al conectar con el servidor')
+      }
 
       const ordData = await ordRes.json()
       const vehData = await vehRes.json()
@@ -92,53 +93,7 @@ export default function OrdenesPage() {
       setError(null)
     } catch (err: any) {
       console.error(err)
-      setError('No se pudieron cargar los datos de la base de datos local. Usando datos demo.')
-      
-      // Fallback demo data
-      setVehiculos([
-        { id: 1, placa: 'MEC-1234', marca: 'Toyota', modelo: 'Hilux', cliente: { id: 1, nombre: 'Juan Pérez' } },
-        { id: 2, placa: 'ABC-7890', marca: 'Honda', modelo: 'Civic', cliente: { id: 2, nombre: 'María Rodríguez' } },
-        { id: 3, placa: 'XYZ-5544', marca: 'Ford', modelo: 'Ranger', cliente: { id: 3, nombre: 'Carlos Mendoza' } },
-        { id: 4, placa: 'PQR-9988', marca: 'Hyundai', modelo: 'Tucson', cliente: { id: 4, nombre: 'Ana Gómez' } }
-      ])
-
-      setOrdenes([
-        {
-          id: 1,
-          servicio: 'Alineación y Balanceo',
-          diagnostico: 'Desviación leve hacia la izquierda en suspensión delantera.',
-          estado: 'En progreso',
-          fecha: new Date().toISOString().split('T')[0],
-          vehiculoId: 1,
-          vehiculo: { id: 1, placa: 'MEC-1234', marca: 'Toyota', modelo: 'Hilux', cliente: { id: 1, nombre: 'Juan Pérez' } },
-          serviciosRealizados: [
-            { id: 1, descripcion: 'Alineado computarizado', repuesto: 'Ninguno', costo: 45.00 }
-          ]
-        },
-        {
-          id: 2,
-          servicio: 'Cambio de Aceite y Filtros',
-          diagnostico: 'Aceite quemado por vencimiento de kilometraje. Requiere cambio de filtro de aire.',
-          estado: 'Pendiente',
-          fecha: new Date().toISOString().split('T')[0],
-          vehiculoId: 2,
-          vehiculo: { id: 2, placa: 'ABC-7890', marca: 'Honda', modelo: 'Civic', cliente: { id: 2, nombre: 'María Rodríguez' } },
-          serviciosRealizados: []
-        },
-        {
-          id: 3,
-          servicio: 'Frenos y Rectificación de Discos',
-          diagnostico: 'Balatas gastadas con menos del 15% de vida útil. Discos rayados.',
-          estado: 'Completado',
-          fecha: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-          vehiculoId: 3,
-          vehiculo: { id: 3, placa: 'XYZ-5544', marca: 'Ford', modelo: 'Ranger', cliente: { id: 3, nombre: 'Carlos Mendoza' } },
-          serviciosRealizados: [
-            { id: 2, descripcion: 'Cambio de balatas delanteras', repuesto: 'Balatas Cerámicas', costo: 120.00 },
-            { id: 3, descripcion: 'Rectificación de discos', repuesto: 'Ninguno', costo: 60.00 }
-          ]
-        }
-      ])
+      setError(`Error de base de datos: ${err.message}. Verifique su conexión en .env`)
     } finally {
       setLoading(false)
     }
@@ -161,7 +116,7 @@ export default function OrdenesPage() {
     setDiagnostico('')
     setEstado('Pendiente')
     setFecha(new Date().toISOString().split('T')[0])
-    setVehiculoId(vehiculos[0]?.id.toString() || '')
+    setVehiculoId(vehiculos[0]?.id_vehiculo.toString() || '')
     setFormError(null)
     setIsModalOpen(true)
   }
@@ -169,19 +124,19 @@ export default function OrdenesPage() {
   const openEditModal = (orden: Orden) => {
     setModalMode('edit')
     setSelectedOrden(orden)
-    setServicio(orden.servicio)
-    setDiagnostico(orden.diagnostico)
-    setEstado(orden.estado)
-    setFecha(new Date(orden.fecha).toISOString().split('T')[0])
-    setVehiculoId(orden.vehiculoId.toString())
+    setServicio(orden.motivo_ingreso)
+    setDiagnostico(orden.observaciones || '')
+    setEstado(orden.estado_actual.nombre_estado as any)
+    setFecha(new Date(orden.fecha_ingreso).toISOString().split('T')[0])
+    setVehiculoId(orden.id_vehiculo.toString())
     setFormError(null)
     setIsModalOpen(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!servicio || !diagnostico || !estado || !fecha || !vehiculoId) {
-      setFormError('Todos los campos son obligatorios')
+    if (!servicio || !fecha || !vehiculoId) {
+      setFormError('Campos obligatorios faltantes')
       return
     }
 
@@ -189,83 +144,46 @@ export default function OrdenesPage() {
       setFormSubmitting(true)
       setFormError(null)
 
-      const url = modalMode === 'create' ? '/api/ordenes' : `/api/ordenes/${selectedOrden?.id}`
+      const url = modalMode === 'create' ? '/api/ordenes' : `/api/ordenes/${selectedOrden?.id_orden}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
 
+      // Note: This API mapping might need more specific backend support for state names vs IDs
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          servicio,
-          diagnostico,
-          estado,
-          fecha: new Date(fecha).toISOString(),
-          vehiculoId: parseInt(vehiculoId, 10)
+          motivo_ingreso: servicio,
+          observaciones: diagnostico,
+          id_estado_actual: 1, // Placeholder for 'Pendiente'
+          fecha_ingreso: new Date(fecha).toISOString(),
+          id_vehiculo: parseInt(vehiculoId, 10),
+          id_cliente: vehiculos.find(v => v.id_vehiculo === parseInt(vehiculoId, 10))?.id_cliente
         })
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Ocurrió un error al guardar la orden de trabajo')
+        throw new Error(data.details || data.error || 'Ocurrió un error al guardar la orden de trabajo')
       }
 
       setIsModalOpen(false)
       fetchData(search)
     } catch (err: any) {
       console.error(err)
-      setFormError(err.message || 'Error en la conexión. Guardado simulado en modo demo.')
-
-      // Simulate client side update in demo mode
-      const selectedVehObj = vehiculos.find(v => v.id === parseInt(vehiculoId, 10)) || {
-        id: 1,
-        placa: 'MEC-1234',
-        marca: 'Toyota',
-        modelo: 'Hilux',
-        cliente: { id: 1, nombre: 'Juan Pérez' }
-      }
-
-      if (modalMode === 'create') {
-        const mockNew: Orden = {
-          id: Date.now(),
-          servicio,
-          diagnostico,
-          estado,
-          fecha,
-          vehiculoId: parseInt(vehiculoId, 10),
-          vehiculo: selectedVehObj,
-          serviciosRealizados: []
-        }
-        setOrdenes(prev => [mockNew, ...prev])
-        setIsModalOpen(false)
-      } else if (modalMode === 'edit' && selectedOrden) {
-        setOrdenes(prev => prev.map(o => o.id === selectedOrden.id ? {
-          ...o,
-          servicio,
-          diagnostico,
-          estado,
-          fecha,
-          vehiculoId: parseInt(vehiculoId, 10),
-          vehiculo: selectedVehObj
-        } : o))
-        setIsModalOpen(false)
-      }
+      setFormError(err.message)
     } finally {
       setFormSubmitting(false)
     }
   }
 
-  const updateOrderStatus = async (orden: Orden, newStatus: 'Pendiente' | 'En progreso' | 'Completado') => {
+  const updateOrderStatus = async (orden: Orden, newStatus: string) => {
     try {
-      const res = await fetch(`/api/ordenes/${orden.id}`, {
+      const res = await fetch(`/api/ordenes/${orden.id_orden}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          servicio: orden.servicio,
-          diagnostico: orden.diagnostico,
-          estado: newStatus,
-          fecha: new Date(orden.fecha).toISOString(),
-          vehiculoId: orden.vehiculoId
+          estado: newStatus
         })
       })
 
@@ -273,13 +191,11 @@ export default function OrdenesPage() {
       fetchData(search)
     } catch (err) {
       console.error(err)
-      // Simulate state update
-      setOrdenes(prev => prev.map(o => o.id === orden.id ? { ...o, estado: newStatus } : o))
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta orden de trabajo? Se borrarán todos los servicios realizados vinculados.')) return
+    if (!confirm('¿Estás seguro de que deseas eliminar esta orden de trabajo?')) return
 
     try {
       const res = await fetch(`/api/ordenes/${id}`, {
@@ -288,20 +204,19 @@ export default function OrdenesPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Error al eliminar la orden')
+        throw new Error(data.details || data.error || 'Error al eliminar la orden')
       }
 
       fetchData(search)
     } catch (err: any) {
       console.error(err)
-      alert(err.message || 'Error al eliminar. Simulado en modo demo.')
-      setOrdenes(prev => prev.filter(o => o.id !== id))
+      alert(err.message)
     }
   }
 
   const filteredOrdenes = ordenes.filter(o => {
     if (activeTab === 'todos') return true
-    return o.estado === activeTab
+    return o.estado_actual.nombre_estado === activeTab
   })
 
   return (
@@ -369,7 +284,7 @@ export default function OrdenesPage() {
           <Loader2 className="h-8 w-8 text-amber-600 dark:text-amber-400 animate-spin" />
           <p className="text-xs text-slate-400 dark:text-slate-500">Cargando órdenes de trabajo...</p>
         </div>
-      ) : filteredOrdenes.length === 0 ? (
+      ) : (filteredOrdenes.length === 0 && !loading) ? (
         <div className="flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm px-4">
           <div className="h-12 w-12 rounded-2xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-400 dark:text-slate-600 mb-4">
             <Wrench className="h-6 w-6" />
@@ -382,34 +297,32 @@ export default function OrdenesPage() {
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredOrdenes.map((orden) => {
-            const totalCost = orden.serviciosRealizados?.reduce((sum, s) => sum + s.costo, 0) || 0
-            
             return (
               <div 
-                key={orden.id} 
+                key={orden.id_orden}
                 className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
               >
                 <div>
                   {/* Status header */}
                   <div className="flex items-center justify-between mb-4">
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      orden.estado === 'Completado'
+                      orden.estado_actual.nombre_estado === 'Completado'
                         ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
-                        : orden.estado === 'En progreso'
+                        : orden.estado_actual.nombre_estado === 'En progreso'
                         ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
                         : 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400'
                     }`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${
-                        orden.estado === 'Completado' ? 'bg-emerald-500' : orden.estado === 'En progreso' ? 'bg-blue-500' : 'bg-amber-500'
+                        orden.estado_actual.nombre_estado === 'Completado' ? 'bg-emerald-500' : orden.estado_actual.nombre_estado === 'En progreso' ? 'bg-blue-500' : 'bg-amber-500'
                       }`} />
-                      {orden.estado}
+                      {orden.estado_actual.nombre_estado}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">ID: #{orden.id}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">ID: #{orden.id_orden}</span>
                   </div>
 
                   {/* Main Title & Vehicle details */}
                   <div className="space-y-1.5 mb-4">
-                    <h4 className="font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1">{orden.servicio}</h4>
+                    <h4 className="font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1">{orden.motivo_ingreso}</h4>
                     
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                       <Car className="h-3.5 w-3.5 text-slate-400 shrink-0" />
@@ -419,7 +332,7 @@ export default function OrdenesPage() {
                     </div>
                     
                     <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                      Cliente: {orden.vehiculo.cliente.nombre}
+                      Cliente: {orden.vehiculo.cliente?.usuario?.nombre || 'Sin nombre'}
                     </div>
                   </div>
 
@@ -427,10 +340,10 @@ export default function OrdenesPage() {
                   <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 text-xs border border-slate-100 dark:border-slate-800/50 mb-4">
                     <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
                       <FileText className="h-3 w-3" />
-                      Diagnóstico Inicial
+                      Observaciones
                     </div>
                     <p className="text-slate-600 dark:text-slate-300 line-clamp-2 italic">
-                      &ldquo;{orden.diagnostico}&rdquo;
+                      &ldquo;{orden.observaciones || 'Sin observaciones'}&rdquo;
                     </p>
                   </div>
                 </div>
@@ -440,49 +353,13 @@ export default function OrdenesPage() {
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500">
                       <Calendar className="h-3.5 w-3.5" />
-                      <span>{new Date(orden.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                    </div>
-                    
-                    {/* Cost summary badge */}
-                    <div className="font-bold text-slate-800 dark:text-slate-200">
-                      Costo: <span className="text-emerald-500">${totalCost.toFixed(2)}</span>
+                      <span>{new Date(orden.fecha_ingreso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                     </div>
                   </div>
 
                   {/* Quick state change and options */}
                   <div className="flex items-center justify-between gap-2">
-                    {/* Status quick toggle buttons */}
-                    <div className="flex gap-1.5">
-                      {orden.estado === 'Pendiente' && (
-                        <button
-                          onClick={() => updateOrderStatus(orden, 'En progreso')}
-                          className="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 dark:hover:bg-blue-950/70 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          <Play className="h-3 w-3" /> Iniciar
-                        </button>
-                      )}
-                      {orden.estado === 'En progreso' && (
-                        <button
-                          onClick={() => updateOrderStatus(orden, 'Completado')}
-                          className="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-950/70 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          <CheckCircle className="h-3 w-3" /> Completar
-                        </button>
-                      )}
-                      {orden.estado === 'Completado' && (
-                        <span className="text-[10px] text-emerald-500 font-bold tracking-wide">✓ Trabajo Terminado</span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {/* Link to performed services */}
-                      <Link
-                        href={`/servicios-realizados?ordenId=${orden.id}`}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:bg-slate-800 transition-colors"
-                        title="Ver servicios realizados y repuestos"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Link>
+                    <div className="flex items-center gap-1 ml-auto">
                       <button
                         onClick={() => openEditModal(orden)}
                         className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-amber-400 dark:hover:bg-slate-800 transition-colors cursor-pointer"
@@ -491,7 +368,7 @@ export default function OrdenesPage() {
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(orden.id)}
+                        onClick={() => handleDelete(orden.id_orden)}
                         className="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                         title="Eliminar orden"
                       >
@@ -557,10 +434,9 @@ export default function OrdenesPage() {
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Diagnóstico Técnico Inicial
+                  Observaciones / Diagnóstico Técnico
                 </label>
                 <textarea
-                  required
                   rows={3}
                   placeholder="Ej. El motor vibra al estar en marcha. El escáner arroja falla en cilindro 3."
                   value={diagnostico}
@@ -614,8 +490,8 @@ export default function OrdenesPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-amber-500/25 dark:focus:ring-amber-400/25 text-sm transition-all"
                   >
                     {vehiculos.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.marca} {v.modelo} (Placa: {v.placa}) • Propietario: {v.cliente.nombre}
+                      <option key={v.id_vehiculo} value={v.id_vehiculo}>
+                        {v.marca} {v.modelo} (Placa: {v.placa}) • Propietario: {v.cliente?.usuario?.nombre || 'Sin nombre'}
                       </option>
                     ))}
                   </select>

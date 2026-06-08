@@ -22,6 +22,7 @@ interface Cliente {
   telefono: string
   email: string
   direccion: string
+  identidad?: string
   _count?: {
     vehiculos: number
   }
@@ -43,6 +44,7 @@ export default function ClientesPage() {
   const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
   const [direccion, setDireccion] = useState('')
+  const [identidad, setIdentidad] = useState('')
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -51,20 +53,16 @@ export default function ClientesPage() {
     try {
       setLoading(true)
       const res = await fetch(`/api/clientes${query ? `?q=${encodeURIComponent(query)}` : ''}`)
-      if (!res.ok) throw new Error('Error al conectar con el servidor')
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.details || errData.error || 'Error al conectar con el servidor')
+      }
       const data = await res.json()
       setClientes(data)
       setError(null)
     } catch (err: any) {
       console.error(err)
-      setError('No se pudieron cargar los clientes. Usando datos demo locales.')
-      // Fallback demo data if PostgreSQL is not running
-      setClientes([
-        { id: 1, nombre: 'Juan Pérez', telefono: '555-0199', email: 'juan.perez@example.com', direccion: 'Av. Reforma 123, CDMX' },
-        { id: 2, nombre: 'María Rodríguez', telefono: '555-0144', email: 'maria.rod@example.com', direccion: 'Calle Pino 45, Guadalajara' },
-        { id: 3, nombre: 'Carlos Mendoza', telefono: '555-0177', email: 'carlos.m@example.com', direccion: 'Boulevard Colosio 890, Monterrey' },
-        { id: 4, nombre: 'Ana Gómez', telefono: '555-0122', email: 'ana.gomez@example.com', direccion: 'Paseo de la Loma 12, Querétaro' }
-      ])
+      setError(`Error de base de datos: ${err.message}. Verifique su conexión en .env`)
     } finally {
       setLoading(false)
     }
@@ -77,7 +75,6 @@ export default function ClientesPage() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     setSearch(val)
-    // Debounced search or immediate search on change
     fetchClientes(val)
   }
 
@@ -88,6 +85,7 @@ export default function ClientesPage() {
     setTelefono('')
     setEmail('')
     setDireccion('')
+    setIdentidad('')
     setFormError(null)
     setIsModalOpen(true)
   }
@@ -99,6 +97,7 @@ export default function ClientesPage() {
     setTelefono(cliente.telefono)
     setEmail(cliente.email)
     setDireccion(cliente.direccion)
+    setIdentidad(cliente.identidad || '')
     setFormError(null)
     setIsModalOpen(true)
   }
@@ -120,30 +119,20 @@ export default function ClientesPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, telefono, email, direccion })
+        body: JSON.stringify({ nombre, telefono, email, direccion, identidad })
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Ocurrió un error al procesar el cliente')
+        throw new Error(data.details || data.error || 'Ocurrió un error al procesar el cliente')
       }
 
       setIsModalOpen(false)
       fetchClientes(search)
     } catch (err: any) {
       console.error(err)
-      setFormError(err.message || 'Error en la conexión. Guardado simulado en modo demo.')
-      
-      // Simulate client side update for demo mode if fetch fails
-      if (modalMode === 'create') {
-        const mockNew = { id: Date.now(), nombre, telefono, email, direccion }
-        setClientes(prev => [...prev, mockNew])
-        setIsModalOpen(false)
-      } else if (modalMode === 'edit' && selectedCliente) {
-        setClientes(prev => prev.map(c => c.id === selectedCliente.id ? { ...c, nombre, telefono, email, direccion } : c))
-        setIsModalOpen(false)
-      }
+      setFormError(err.message)
     } finally {
       setFormSubmitting(false)
     }
@@ -159,15 +148,13 @@ export default function ClientesPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Error al eliminar el cliente')
+        throw new Error(data.details || data.error || 'Error al eliminar el cliente')
       }
 
       fetchClientes(search)
     } catch (err: any) {
       console.error(err)
-      alert(err.message || 'Error al eliminar. Simulado en modo demo.')
-      // Simulate client side delete
-      setClientes(prev => prev.filter(c => c.id !== id))
+      alert(err.message)
     }
   }
 
@@ -193,7 +180,7 @@ export default function ClientesPage() {
       {/* Search and warnings */}
       <div className="flex flex-col gap-4">
         {error && (
-          <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-200/35 dark:border-amber-900/20">
+          <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-200/35 dark:border-red-900/20">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -371,6 +358,19 @@ export default function ClientesPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:focus:ring-blue-400/25 text-sm transition-all"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Identidad / ID (Opcional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. 0801-1990-12345"
+                  value={identidad}
+                  onChange={(e) => setIdentidad(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:focus:ring-blue-400/25 text-sm transition-all"
+                />
               </div>
 
               <div className="space-y-1.5">
