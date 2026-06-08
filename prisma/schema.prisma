@@ -4,6 +4,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["views"]
 }
 
 model Rol {
@@ -231,4 +232,137 @@ model AlertaMantenimiento {
   orden_origen           OrdenTrabajo? @relation(fields: [id_orden_origen], references: [id_orden], onUpdate: Cascade, onDelete: SetNull)
 
   @@map("alertas_mantenimiento")
+}
+
+/// Views
+
+view ResumenOrden {
+  id_orden               Int       @unique
+  cliente                String?
+  correo_cliente         String?
+  telefono_cliente       String?
+  placa                  String?
+  marca                  String?
+  modelo                 String?
+  anio                   Int?
+  color                  String?
+  kilometraje_actual     Int?
+  mecanico               String?
+  especialidad           String?
+  estado_actual          String?
+  fecha_ingreso          DateTime?
+  fecha_estimada_entrega DateTime?
+  fecha_entrega          DateTime?
+  kilometraje_ingreso    Int?
+  motivo_ingreso         String?
+  prioridad              String?
+  observaciones          String?
+
+  @@map("vw_ordenes_resumen")
+}
+
+view ResumenDiagnostico {
+  id_diagnostico    Int       @unique
+  id_orden          Int?
+  cliente           String?
+  placa             String?
+  marca             String?
+  modelo            String?
+  falla_reportada   String?
+  causa_detectada   String?
+  recomendacion     String?
+  observaciones     String?
+  fecha_diagnostico DateTime?
+
+  @@map("vw_diagnosticos_resumen")
+}
+
+view HistorialEstadoResumen {
+  id_historial_estado Int       @unique
+  id_orden            Int?
+  cliente             String?
+  placa               String?
+  marca               String?
+  modelo              String?
+  nombre_estado       String?
+  actualizado_por     String?
+  fecha_hora          DateTime?
+  comentario          String?
+
+  @@map("vw_historial_estados")
+}
+
+view ServiciosPorOrden {
+  id_orden_servicio Int      @unique
+  id_orden          Int?
+  nombre_servicio   String?
+  descripcion       String?
+  cantidad          Int?
+  precio_unitario   Decimal? @db.Decimal
+  subtotal          Decimal? @db.Decimal
+  observaciones     String?
+
+  @@map("vw_servicios_por_orden")
+}
+
+view RepuestosPorOrden {
+  id_orden_repuesto Int      @unique
+  id_orden          Int?
+  nombre_repuesto   String?
+  marca             String?
+  cantidad          Int?
+  precio_unitario   Decimal? @db.Decimal
+  subtotal          Decimal? @db.Decimal
+
+  @@map("vw_repuestos_por_orden")
+}
+
+view ResumenFactura {
+  id_factura         Int       @unique
+  numero_factura     String?
+  id_orden           Int?
+  cliente            String?
+  placa              String?
+  marca              String?
+  modelo             String?
+  fecha_emision      DateTime?
+  subtotal_servicios Decimal?  @db.Decimal
+  subtotal_repuestos Decimal?  @db.Decimal
+  impuesto           Decimal?  @db.Decimal
+  descuento          Decimal?  @db.Decimal
+  total              Decimal?  @db.Decimal
+  estado_pago        String?
+  metodo_pago        String?
+
+  @@map("vw_facturas_resumen")
+}
+
+view AlertasPendientes {
+  id_alerta              Int       @unique
+  cliente                String?
+  correo_cliente         String?
+  placa                  String?
+  marca                  String?
+  modelo                 String?
+  nombre_servicio        String?
+  kilometraje_referencia Int?
+  kilometraje_objetivo   Int?
+  fecha_objetivo         DateTime?
+  mensaje                String?
+  estado                 String?
+  fecha_generada         DateTime?
+
+  @@map("vw_alertas_pendientes")
+}
+
+view InventarioBajo {
+  id_repuesto     Int      @unique
+  nombre_repuesto String?
+  marca           String?
+  stock           Int?
+  stock_minimo    Int?
+  precio_unitario Decimal? @db.Decimal
+  estado          String?
+
+  @@map("vw_inventario_bajo")
 }

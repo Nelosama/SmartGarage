@@ -18,15 +18,21 @@ npm install
 
 ### 2. Configuración de Variables de Entorno
 
-El proyecto requiere un archivo `.env` en la raíz. He incluido un archivo `.env` en el repositorio con la configuración base, pero asegúrate de que contenga lo siguiente:
+Crea un archivo `.env` en la raíz del proyecto basándote en el archivo `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Asegúrate de configurar `DATABASE_URL` con tu contraseña de Supabase y el **Connection Pooler** activado:
 
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://mgxqbkfiqfmtydydhfgl.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anon_aquí
 
-# Base de Datos (Prisma)
-DATABASE_URL="postgresql://postgres:tu_password_aquí@db.mgxqbkfiqfmtydydhfgl.supabase.co:5432/postgres"
+# Base de Datos (Prisma con Connection Pooler)
+DATABASE_URL="postgresql://postgres.mgxqbkfiqfmtydydhfgl:tu_password_aquí@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 ```
 
 ### 3. Ejecución en Desarrollo
@@ -37,11 +43,11 @@ Para iniciar el servidor de desarrollo, utiliza:
 npm run dev --webpack
 ```
 
-> **Importante:** Debido a configuraciones específicas del entorno, es necesario incluir el flag `--webpack` al ejecutar los scripts de Next.js.
+> **Importante:** Según las instrucciones internas del proyecto, es necesario incluir el flag `--webpack` al ejecutar los scripts de desarrollo y construcción.
 
 ### 4. Estructura de Base de Datos
 
-El esquema de Prisma ya está sincronizado con las 15 tablas principales del taller. Si realizas cambios en el archivo `prisma/schema.prisma`, recuerda ejecutar:
+El esquema de Prisma está sincronizado con las 15 tablas principales del taller. Si realizas cambios en el archivo `prisma/schema.prisma`, recuerda ejecutar:
 
 ```bash
 npx prisma generate
@@ -54,10 +60,10 @@ npx prisma generate
 - `npm run lint`: Ejecuta el linter para verificar la calidad del código.
 - `npx prisma studio`: Abre una interfaz visual para explorar tus datos.
 
-## Tecnologías Principales
+## Tecnologías
 
-- **React 19**
-- **Next.js 16 (Custom Version)**
-- **Prisma 7**
+- **React**
+- **Next.js**
+- **Prisma**
 - **PostgreSQL (Supabase)**
-- **Tailwind CSS 4**
+- **Tailwind CSS**

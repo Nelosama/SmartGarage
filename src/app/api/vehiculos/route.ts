@@ -10,9 +10,9 @@ export async function GET(request: Request) {
     const whereClause: any = {}
 
     if (clienteIdParam) {
-      const clienteId = parseInt(clienteIdParam, 10)
-      if (!isNaN(clienteId)) {
-        whereClause.clienteId = clienteId
+      const id_cliente = parseInt(clienteIdParam, 10)
+      if (!isNaN(id_cliente)) {
+        whereClause.id_cliente = id_cliente
       }
     }
 
@@ -21,13 +21,24 @@ export async function GET(request: Request) {
         { placa: { contains: query, mode: 'insensitive' } },
         { marca: { contains: query, mode: 'insensitive' } },
         { modelo: { contains: query, mode: 'insensitive' } },
+        {
+          cliente: {
+            usuario: {
+              nombre: { contains: query, mode: 'insensitive' }
+            }
+          }
+        }
       ]
     }
 
     const vehiculos = await prisma.vehiculo.findMany({
       where: whereClause,
       include: {
-        cliente: true,
+        cliente: {
+          include: {
+            usuario: true
+          }
+        },
       },
       orderBy: { placa: 'asc' },
     })
@@ -42,7 +53,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { placa, marca, modelo, anio, clienteId } = body
+    const { placa, marca, modelo, anio, clienteId, color, vin, tipo_combustible, kilometraje_actual } = body
 
     if (!placa || !marca || !modelo || anio === undefined || clienteId === undefined) {
       return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
@@ -70,10 +81,18 @@ export async function POST(request: Request) {
         marca,
         modelo,
         anio: parsedAnio,
-        clienteId: parsedClienteId,
+        id_cliente: parsedClienteId,
+        color,
+        vin,
+        tipo_combustible,
+        kilometraje_actual: kilometraje_actual || 0
       },
       include: {
-        cliente: true,
+        cliente: {
+          include: {
+            usuario: true
+          }
+        },
       },
     })
 
