@@ -256,12 +256,16 @@ export default function ClientesPage() {
                         <button
                           onClick={() => openEditModal(cliente)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer"
+                          aria-label={`Editar cliente ${cliente.nombre}`}
+                          title="Editar cliente"
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(cliente.id)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                          aria-label={`Eliminar cliente ${cliente.nombre}`}
+                          title="Eliminar cliente"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -283,7 +287,12 @@ export default function ClientesPage() {
               <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
                 {modalMode === 'create' ? 'Registrar Nuevo Cliente' : 'Editar Datos de Cliente'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                aria-label="Cerrar modal"
+                title="Cerrar"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -296,8 +305,9 @@ export default function ClientesPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Nombre Completo</label>
+                <label htmlFor="nombre" className="text-[10px] font-bold text-slate-500 uppercase">Nombre Completo</label>
                 <input
+                  id="nombre"
                   type="text"
                   required
                   value={nombre}
@@ -308,8 +318,9 @@ export default function ClientesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Teléfono</label>
+                  <label htmlFor="telefono" className="text-[10px] font-bold text-slate-500 uppercase">Teléfono</label>
                   <input
+                    id="telefono"
                     type="tel"
                     required
                     value={telefono}
@@ -318,8 +329,9 @@ export default function ClientesPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Email</label>
+                  <label htmlFor="email" className="text-[10px] font-bold text-slate-500 uppercase">Email</label>
                   <input
+                    id="email"
                     type="email"
                     required
                     value={email}
@@ -330,8 +342,9 @@ export default function ClientesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">N° Identidad</label>
+                <label htmlFor="identidad" className="text-[10px] font-bold text-slate-500 uppercase">N° Identidad</label>
                 <input
+                  id="identidad"
                   type="text"
                   value={identidad}
                   onChange={(e) => setIdentidad(e.target.value)}
@@ -340,8 +353,9 @@ export default function ClientesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Dirección</label>
+                <label htmlFor="direccion" className="text-[10px] font-bold text-slate-500 uppercase">Dirección</label>
                 <textarea
+                  id="direccion"
                   required
                   rows={2}
                   value={direccion}
@@ -354,7 +368,7 @@ export default function ClientesPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold"
+                  className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm font-semibold"
                 >
                   Cancelar
                 </button>
