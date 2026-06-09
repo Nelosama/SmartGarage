@@ -27,7 +27,6 @@ export default async function DashboardPage() {
   }
   
   let recentOrders: any[] = []
-  let isDemoData = false
 
   try {
     const [
@@ -40,23 +39,28 @@ export default async function DashboardPage() {
     ] = await Promise.all([
       prisma.cliente.count(),
       prisma.vehiculo.count(),
-      prisma.orden.count({ where: { estado: 'Pendiente' } }),
-      prisma.orden.count({ where: { estado: 'En progreso' } }),
-      prisma.orden.count({ where: { estado: 'Completado' } }),
-      prisma.servicioRealizado.findMany({ select: { costo: true } })
+      prisma.ordenTrabajo.count({ where: { estado_actual: { nombre_estado: 'Pendiente' } } }),
+      prisma.ordenTrabajo.count({ where: { estado_actual: { nombre_estado: 'En progreso' } } }),
+      prisma.ordenTrabajo.count({ where: { estado_actual: { nombre_estado: 'Completado' } } }),
+      prisma.ordenServicio.findMany({ select: { subtotal: true } })
     ])
 
-    const totalRecaudado = servicios.reduce((acc, s) => acc + s.costo, 0)
+    const totalRecaudado = servicios.reduce((acc, s) => acc + Number(s.subtotal), 0)
 
-    recentOrders = await prisma.orden.findMany({
+    recentOrders = await prisma.ordenTrabajo.findMany({
       take: 5,
-      orderBy: { fecha: 'desc' },
+      orderBy: { fecha_ingreso: 'desc' },
       include: {
         vehiculo: {
           include: {
-            cliente: true
+            cliente: {
+              include: {
+                usuario: true
+              }
+            }
           }
-        }
+        },
+        estado_actual: true
       }
     })
 
@@ -68,82 +72,21 @@ export default async function DashboardPage() {
       completadas,
       recaudado: totalRecaudado
     }
-  } catch (error) {
-    console.warn('Could not connect to database, using premium fallback demo data:', error)
-    isDemoData = true
-    
-    // Premium fallback demo data so the app looks beautiful before database is fully running
-    stats = {
-      clientes: 124,
-      vehiculos: 148,
-      pendientes: 5,
-      enProgreso: 8,
-      completadas: 312,
-      recaudado: 14250.75
-    }
-
-    recentOrders = [
-      {
-        id: 1,
-        servicio: 'Alineación y Balanceo',
-        estado: 'En progreso',
-        fecha: new Date(),
-        vehiculo: {
-          placa: 'MEC-1234',
-          marca: 'Toyota',
-          modelo: 'Hilux',
-          cliente: { nombre: 'Juan Pérez' }
-        }
-      },
-      {
-        id: 2,
-        servicio: 'Cambio de Aceite y Filtros',
-        estado: 'Pendiente',
-        fecha: new Date(Date.now() - 3600000 * 2),
-        vehiculo: {
-          placa: 'ABC-7890',
-          marca: 'Honda',
-          modelo: 'Civic',
-          cliente: { nombre: 'María Rodríguez' }
-        }
-      },
-      {
-        id: 3,
-        servicio: 'Frenos y Rectificación de Discos',
-        estado: 'Completado',
-        fecha: new Date(Date.now() - 3600000 * 5),
-        vehiculo: {
-          placa: 'XYZ-5544',
-          marca: 'Ford',
-          modelo: 'Ranger',
-          cliente: { nombre: 'Carlos Mendoza' }
-        }
-      },
-      {
-        id: 4,
-        servicio: 'Reparación de Suspensión Delantera',
-        estado: 'En progreso',
-        fecha: new Date(Date.now() - 3600000 * 24),
-        vehiculo: {
-          placa: 'PQR-9988',
-          marca: 'Hyundai',
-          modelo: 'Tucson',
-          cliente: { nombre: 'Ana Gómez' }
-        }
-      },
-      {
-        id: 5,
-        servicio: 'Diagnóstico Eléctrico de Motor',
-        estado: 'Completado',
-        fecha: new Date(Date.now() - 3600000 * 48),
-        vehiculo: {
-          placa: 'BMW-320I',
-          marca: 'BMW',
-          modelo: 'Serie 3',
-          cliente: { nombre: 'Luis Valenzuela' }
-        }
-      }
-    ]
+  } catch (error: any) {
+    console.error('Database connection failed:', error)
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-4">
+        <div className="p-4 rounded-full bg-red-50 dark:bg-red-950/20 text-red-600">
+          <AlertTriangle className="h-12 w-12" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Error de Conexión</h2>
+        <p className="max-w-md text-slate-500 dark:text-slate-400">
+          No se pudo establecer conexión con la base de datos de Supabase.
+          Por favor, verifique su archivo <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800">.env</code>.
+        </p>
+        <p className="text-xs text-slate-400 font-mono">{error.message}</p>
+      </div>
+    )
   }
 
   const activeOrdersCount = stats.pendientes + stats.enProgreso
@@ -152,19 +95,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-slide-up">
-      {/* Alert Warning if demo data */}
-      {isDemoData && (
-        <div className="flex items-start gap-4 p-4 rounded-2xl border border-amber-200/50 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
-          <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-amber-600 dark:text-amber-500" />
-          <div>
-            <h4 className="font-bold text-sm">Modo de Demostración</h4>
-            <p className="text-xs mt-1 leading-relaxed opacity-90">
-              No se pudo conectar a la base de datos PostgreSQL local en <code className="bg-amber-100 dark:bg-amber-900/50 px-1 py-0.5 rounded">localhost:5432</code>. Asegúrate de iniciar tu servidor de base de datos local y ejecutar las migraciones con <code className="bg-amber-100 dark:bg-amber-900/50 px-1 py-0.5 rounded">npx prisma db push</code>. Mostrando datos de prueba interactivos.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Welcome banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white shadow-xl shadow-blue-500/10">
         <div className="relative z-10 max-w-xl">
@@ -253,39 +183,39 @@ export default async function DashboardPage() {
               <thead>
                 <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 dark:text-slate-500 font-semibold">
                   <th className="py-3.5 px-6">Cliente/Vehículo</th>
-                  <th className="py-3.5 px-4">Servicio</th>
+                  <th className="py-3.5 px-4">Motivo</th>
                   <th className="py-3.5 px-4 text-center">Estado</th>
                   <th className="py-3.5 px-6 text-right">Fecha</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {recentOrders.map((orden) => (
-                  <tr key={orden.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-colors">
+                  <tr key={orden.id_orden} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-colors">
                     <td className="py-4 px-6">
-                      <p className="font-bold text-slate-800 dark:text-slate-200">{orden.vehiculo.cliente.nombre}</p>
+                      <p className="font-bold text-slate-800 dark:text-slate-200">{orden.vehiculo.cliente?.usuario?.nombre || 'Sin nombre'}</p>
                       <p className="text-xs text-slate-400 dark:text-slate-500">
                         {orden.vehiculo.marca} {orden.vehiculo.modelo} • <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[11px] font-bold text-slate-600 dark:text-slate-400">{orden.vehiculo.placa}</span>
                       </p>
                     </td>
                     <td className="py-4 px-4 font-medium text-slate-700 dark:text-slate-300">
-                      {orden.servicio}
+                      {orden.motivo_ingreso}
                     </td>
                     <td className="py-4 px-4 text-center">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        orden.estado === 'Completado'
+                        orden.estado_actual.nombre_estado === 'Completado'
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
-                          : orden.estado === 'En progreso'
+                          : orden.estado_actual.nombre_estado === 'En progreso'
                           ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
                           : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
                       }`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${
-                          orden.estado === 'Completado' ? 'bg-emerald-500' : orden.estado === 'En progreso' ? 'bg-blue-500' : 'bg-amber-500'
+                          orden.estado_actual.nombre_estado === 'Completado' ? 'bg-emerald-500' : orden.estado_actual.nombre_estado === 'En progreso' ? 'bg-blue-500' : 'bg-amber-500'
                         }`} />
-                        {orden.estado}
+                        {orden.estado_actual.nombre_estado}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-right text-xs text-slate-400 dark:text-slate-500">
-                      {new Date(orden.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
+                      {new Date(orden.fecha_ingreso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
                     </td>
                   </tr>
                 ))}
