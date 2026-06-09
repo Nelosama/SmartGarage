@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
-import { 
-  Users, 
-  Car, 
-  Wrench, 
-  TrendingUp, 
-  Clock, 
-  CheckCircle2, 
+import {
+  Users,
+  Car,
+  Wrench,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
   AlertTriangle,
   ArrowRight,
   Plus,
@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     completadas: 0,
     recaudado: 0
   }
-  
+
   let recentOrders: any[] = []
 
   try {
@@ -171,8 +171,8 @@ export default async function DashboardPage() {
               <h3 className="font-bold text-slate-800 dark:text-slate-100">Órdenes de Trabajo Recientes</h3>
               <p className="text-xs text-slate-400 dark:text-slate-500">Últimos vehículos ingresados al taller</p>
             </div>
-            <Link 
-              href="/ordenes" 
+            <Link
+              href="/ordenes"
               className="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
             >
               Ver todas <ArrowRight className="h-3.5 w-3.5" />
@@ -201,16 +201,14 @@ export default async function DashboardPage() {
                       {orden.motivo_ingreso}
                     </td>
                     <td className="py-4 px-4 text-center">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        orden.estado_actual.nombre_estado === 'Completado'
-                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
-                          : orden.estado_actual.nombre_estado === 'En progreso'
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${orden.estado_actual.nombre_estado === 'Completado'
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
+                        : orden.estado_actual.nombre_estado === 'En progreso'
                           ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
                           : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
-                      }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${
-                          orden.estado_actual.nombre_estado === 'Completado' ? 'bg-emerald-500' : orden.estado_actual.nombre_estado === 'En progreso' ? 'bg-blue-500' : 'bg-amber-500'
-                        }`} />
+                        }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${orden.estado_actual.nombre_estado === 'Completado' ? 'bg-emerald-500' : orden.estado_actual.nombre_estado === 'En progreso' ? 'bg-blue-500' : 'bg-amber-500'
+                          }`} />
                         {orden.estado_actual.nombre_estado}
                       </span>
                     </td>
@@ -236,8 +234,8 @@ export default async function DashboardPage() {
                 <span className="text-blue-600 dark:text-blue-400">{completionRate}%</span>
               </div>
               <div className="h-3.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500" 
+                <div
+                  className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500"
                   style={{ width: `${completionRate}%` }}
                 />
               </div>
@@ -265,8 +263,8 @@ export default async function DashboardPage() {
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Crea registros rápidos en el sistema</p>
             </div>
             <div className="grid grid-cols-2 gap-3 mt-6">
-              <Link 
-                href="/clientes" 
+              <Link
+                href="/clientes"
                 className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-blue-500/30 hover:bg-blue-50/10 dark:border-slate-800 dark:hover:border-blue-400/20 dark:hover:bg-blue-950/10 text-center transition-all duration-200"
               >
                 <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
@@ -274,8 +272,8 @@ export default async function DashboardPage() {
                 </div>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Nuevo Cliente</span>
               </Link>
-              <Link 
-                href="/vehiculos" 
+              <Link
+                href="/vehiculos"
                 className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-indigo-500/30 hover:bg-indigo-50/10 dark:border-slate-800 dark:hover:border-indigo-400/20 dark:hover:bg-indigo-950/10 text-center transition-all duration-200"
               >
                 <div className="p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
@@ -283,8 +281,8 @@ export default async function DashboardPage() {
                 </div>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Nuevo Vehículo</span>
               </Link>
-              <Link 
-                href="/ordenes" 
+              <Link
+                href="/ordenes"
                 className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-amber-500/30 hover:bg-amber-50/10 dark:border-slate-800 dark:hover:border-amber-400/20 dark:hover:bg-amber-950/10 text-center transition-all duration-200"
               >
                 <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
@@ -292,8 +290,8 @@ export default async function DashboardPage() {
                 </div>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Nueva Orden</span>
               </Link>
-              <Link 
-                href="/servicios-realizados" 
+              <Link
+                href="/servicios-realizados"
                 className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-emerald-500/30 hover:bg-emerald-50/10 dark:border-slate-800 dark:hover:border-emerald-400/20 dark:hover:bg-emerald-950/10 text-center transition-all duration-200"
               >
                 <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
