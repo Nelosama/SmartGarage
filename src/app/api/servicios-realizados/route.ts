@@ -50,8 +50,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(servicios)
   } catch (error: any) {
-    console.error('API Error /api/servicios-realizados:', error)
-    return NextResponse.json({ error: 'Error al obtener los servicios realizados' }, { status: 500 })
+    return NextResponse.json({ error: 'Error al obtener los servicios realizados', details: error.message }, { status: 500 })
   }
 }
 
@@ -61,16 +60,18 @@ export async function POST(request: Request) {
     const { id_servicio, id_orden, cantidad, precio_unitario, observaciones } = body
 
     if (!id_servicio || !id_orden || cantidad === undefined || precio_unitario === undefined) {
-      return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
+      return NextResponse.json({ error: 'Campos requeridos faltantes' }, { status: 400 })
     }
+
+    const subtotal = Number(cantidad) * Number(precio_unitario)
 
     const servicioRealizado = await prisma.ordenServicio.create({
       data: {
         id_servicio,
         id_orden,
-        cantidad: cantidad || 1,
-        precio_unitario,
-        subtotal: (cantidad || 1) * precio_unitario,
+        cantidad: Number(cantidad) || 1,
+        precio_unitario: Number(precio_unitario),
+        subtotal,
         observaciones
       },
       include: {
@@ -81,7 +82,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(servicioRealizado, { status: 201 })
   } catch (error: any) {
-    console.error('API Error /api/servicios-realizados POST:', error)
-    return NextResponse.json({ error: 'Error al crear el servicio realizado' }, { status: 500 })
+    return NextResponse.json({ error: 'Error al crear el servicio realizado', details: error.message }, { status: 500 })
   }
 }

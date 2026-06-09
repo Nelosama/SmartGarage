@@ -59,7 +59,6 @@ export async function PUT(
       return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
     }
 
-    // Check if another user has this email
     const existingUsuario = await prisma.usuario.findFirst({
       where: {
         correo: email,
@@ -119,7 +118,6 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
-    // Find the user ID first to delete both (cascade might handle it but let's be sure)
     const cliente = await prisma.cliente.findUnique({
       where: { id_cliente: id }
     })

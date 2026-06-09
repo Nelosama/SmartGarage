@@ -15,20 +15,19 @@ import {
   FileText,
   Play,
   CheckCircle,
-  Eye
+  Eye,
+  User,
+  Activity,
+  ArrowUpRight
 } from 'lucide-react'
 import Link from 'next/link'
-
-interface Cliente {
-  id: number
-  nombre: string
-}
 
 interface Vehiculo {
   id_vehiculo: number
   placa: string
   marca: string
   modelo: string
+  id_cliente: number
   cliente: {
     usuario: {
       nombre: string
@@ -38,19 +37,34 @@ interface Vehiculo {
 
 interface Orden {
   id_orden: number
+  id_cliente: number
+  id_vehiculo: number
+  id_mecanico?: number
+  id_estado_actual: number
+  fecha_ingreso: string
+  fecha_estimada_entrega?: string
+  fecha_entrega?: string
+  kilometraje_ingreso: number
   motivo_ingreso: string
-  observaciones: string
+  prioridad: string
+  observaciones?: string
+  vehiculo: Vehiculo
   estado_actual: {
+    id_estado: number
     nombre_estado: string
   }
-  fecha_ingreso: string
-  id_vehiculo: number
-  vehiculo: Vehiculo
+  mecanico?: {
+    usuario: {
+      nombre: string
+    }
+  }
 }
 
 export default function OrdenesPage() {
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
+  const [mecanicos, setMecanicos] = useState<any[]>([])
+  const [estados, setEstados] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'todos' | 'Pendiente' | 'En progreso' | 'Completado'>('todos')
@@ -62,38 +76,44 @@ export default function OrdenesPage() {
   const [selectedOrden, setSelectedOrden] = useState<Orden | null>(null)
   
   // Form states
-  const [servicio, setServicio] = useState('')
-  const [diagnostico, setDiagnostico] = useState('')
-  const [estado, setEstado] = useState<'Pendiente' | 'En progreso' | 'Completado'>('Pendiente')
-  const [fecha, setFecha] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const [observaciones, setObservaciones] = useState('')
+  const [estadoId, setEstadoId] = useState<string>('')
+  const [mecanicoId, setMecanicoId] = useState<string>('')
   const [vehiculoId, setVehiculoId] = useState<string>('')
+  const [prioridad, setPrioridad] = useState('Media')
+  const [kilometraje, setKilometraje] = useState<number>(0)
+  const [fechaIngreso, setFechaIngreso] = useState('')
+  const [fechaEstimada, setFechaEstimada] = useState('')
+
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  // Fetch orders and vehicles
+  // Fetch orders, vehicles, mechanics, and states
   const fetchData = async (query = '') => {
     try {
       setLoading(true)
       const ordURL = `/api/ordenes${query ? `?q=${encodeURIComponent(query)}` : ''}`
-      const [ordRes, vehRes] = await Promise.all([
+      const [ordRes, vehRes, mecRes, estRes] = await Promise.all([
         fetch(ordURL),
-        fetch('/api/vehiculos')
+        fetch('/api/vehiculos'),
+        fetch('/api/mecanicos'),
+        fetch('/api/estados_orden')
       ])
 
-      if (!ordRes.ok || !vehRes.ok) {
-        const errData = await ordRes.json()
-        throw new Error(errData.details || errData.error || 'Error al conectar con el servidor')
+      if (!ordRes.ok) {
+         const errData = await ordRes.json()
+         throw new Error(errData.details || errData.error || 'Error en servidor')
       }
 
-      const ordData = await ordRes.json()
-      const vehData = await vehRes.json()
-
-      setOrdenes(ordData)
-      setVehiculos(vehData)
+      setOrdenes(await ordRes.json())
+      setVehiculos(await vehRes.json())
+      setMecanicos(await mecRes.json())
+      setEstados(await estRes.json())
       setError(null)
     } catch (err: any) {
       console.error(err)
-      setError(`Error de base de datos: ${err.message}. Verifique su conexión en .env`)
+      setError(`Error: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -112,11 +132,15 @@ export default function OrdenesPage() {
   const openCreateModal = () => {
     setModalMode('create')
     setSelectedOrden(null)
-    setServicio('')
-    setDiagnostico('')
-    setEstado('Pendiente')
-    setFecha(new Date().toISOString().split('T')[0])
-    setVehiculoId(vehiculos[0]?.id_vehiculo.toString() || '')
+    setMotivo('')
+    setObservaciones('')
+    setEstadoId(estados.find(e => e.nombre_estado === 'Pendiente')?.id_estado?.toString() || estados[0]?.id_estado?.toString() || '')
+    setMecanicoId('')
+    setVehiculoId(vehiculos[0]?.id_vehiculo?.toString() || '')
+    setPrioridad('Media')
+    setKilometraje(0)
+    setFechaIngreso(new Date().toISOString().split('T')[0])
+    setFechaEstimada('')
     setFormError(null)
     setIsModalOpen(true)
   }
@@ -124,19 +148,23 @@ export default function OrdenesPage() {
   const openEditModal = (orden: Orden) => {
     setModalMode('edit')
     setSelectedOrden(orden)
-    setServicio(orden.motivo_ingreso)
-    setDiagnostico(orden.observaciones || '')
-    setEstado(orden.estado_actual.nombre_estado as any)
-    setFecha(new Date(orden.fecha_ingreso).toISOString().split('T')[0])
+    setMotivo(orden.motivo_ingreso)
+    setObservaciones(orden.observaciones || '')
+    setEstadoId(orden.id_estado_actual.toString())
+    setMecanicoId(orden.id_mecanico?.toString() || '')
     setVehiculoId(orden.id_vehiculo.toString())
+    setPrioridad(orden.prioridad)
+    setKilometraje(orden.kilometraje_ingreso)
+    setFechaIngreso(new Date(orden.fecha_ingreso).toISOString().split('T')[0])
+    setFechaEstimada(orden.fecha_estimada_entrega ? new Date(orden.fecha_estimada_entrega).toISOString().split('T')[0] : '')
     setFormError(null)
     setIsModalOpen(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!servicio || !fecha || !vehiculoId) {
-      setFormError('Campos obligatorios faltantes')
+    if (!motivo || !vehiculoId || !estadoId) {
+      setFormError('Motivo, Vehículo y Estado son requeridos')
       return
     }
 
@@ -147,24 +175,31 @@ export default function OrdenesPage() {
       const url = modalMode === 'create' ? '/api/ordenes' : `/api/ordenes/${selectedOrden?.id_orden}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
 
-      // Note: This API mapping might need more specific backend support for state names vs IDs
+      const selectedVeh = vehiculos.find(v => v.id_vehiculo === parseInt(vehiculoId, 10))
+
+      const body = {
+        motivo_ingreso: motivo,
+        observaciones,
+        id_estado_actual: parseInt(estadoId, 10),
+        id_mecanico: mecanicoId ? parseInt(mecanicoId, 10) : null,
+        id_vehiculo: parseInt(vehiculoId, 10),
+        id_cliente: selectedVeh?.id_cliente,
+        prioridad,
+        kilometraje_ingreso: parseInt(kilometraje.toString(), 10),
+        fecha_ingreso: new Date(fechaIngreso).toISOString(),
+        fecha_estimada_entrega: fechaEstimada ? new Date(fechaEstimada).toISOString() : null
+      }
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          motivo_ingreso: servicio,
-          observaciones: diagnostico,
-          id_estado_actual: 1, // Placeholder for 'Pendiente'
-          fecha_ingreso: new Date(fecha).toISOString(),
-          id_vehiculo: parseInt(vehiculoId, 10),
-          id_cliente: vehiculos.find(v => v.id_vehiculo === parseInt(vehiculoId, 10))?.id_cliente
-        })
+        body: JSON.stringify(body)
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.details || data.error || 'Ocurrió un error al guardar la orden de trabajo')
+        throw new Error(data.details || data.error || 'Error al guardar orden')
       }
 
       setIsModalOpen(false)
@@ -177,39 +212,13 @@ export default function OrdenesPage() {
     }
   }
 
-  const updateOrderStatus = async (orden: Orden, newStatus: string) => {
-    try {
-      const res = await fetch(`/api/ordenes/${orden.id_orden}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          estado: newStatus
-        })
-      })
-
-      if (!res.ok) throw new Error('Error al actualizar el estado')
-      fetchData(search)
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta orden de trabajo?')) return
-
+    if (!confirm('¿Estás seguro?')) return
     try {
-      const res = await fetch(`/api/ordenes/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.details || data.error || 'Error al eliminar la orden')
-      }
-
+      const res = await fetch(`/api/ordenes/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Error al eliminar')
       fetchData(search)
     } catch (err: any) {
-      console.error(err)
       alert(err.message)
     }
   }
@@ -224,32 +233,26 @@ export default function OrdenesPage() {
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight">Órdenes de Trabajo</h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-            Registro, diagnóstico y control de estado de reparaciones en taller
-          </p>
+          <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100">Órdenes de Trabajo</h2>
+          <p className="text-xs text-slate-400 mt-0.5">Control de diagnóstico y reparaciones</p>
         </div>
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg transition-all"
         >
-          <Wrench className="h-4.5 w-4.5" />
-          Nueva Orden de Trabajo
+          <Plus className="h-4.5 w-4.5" /> Nueva Orden
         </button>
       </div>
 
       {/* Tabs and Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Tabs */}
         <div className="flex p-1 rounded-xl bg-slate-100 dark:bg-slate-900 self-start">
           {(['todos', 'Pendiente', 'En progreso', 'Completado'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-                activeTab === tab
-                  ? 'bg-white text-slate-800 dark:bg-slate-800 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                activeTab === tab ? 'bg-white dark:bg-slate-800 shadow-sm text-slate-800 dark:text-white' : 'text-slate-500'
               }`}
             >
               {tab === 'todos' ? 'Todas' : tab}
@@ -257,262 +260,164 @@ export default function OrdenesPage() {
           ))}
         </div>
 
-        {/* Search */}
         <div className="relative w-full max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 dark:text-slate-500" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400" />
           <input
             type="text"
-            placeholder="Buscar por placa, servicio, diagnóstico..."
+            placeholder="Buscar orden..."
             value={search}
             onChange={handleSearchChange}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:focus:ring-blue-400/25 text-sm transition-all shadow-sm"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/25"
           />
         </div>
       </div>
 
-      {/* Database Warning */}
       {error && (
-        <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-200/35 dark:border-amber-900/20">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
+        <div className="p-3 text-xs rounded-xl bg-red-50 text-red-600 border border-red-200 flex items-center gap-2">
+          <AlertCircle className="h-4 w-4" /> {error}
         </div>
       )}
 
-      {/* Orders Grid */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm gap-3">
-          <Loader2 className="h-8 w-8 text-amber-600 dark:text-amber-400 animate-spin" />
-          <p className="text-xs text-slate-400 dark:text-slate-500">Cargando órdenes de trabajo...</p>
-        </div>
-      ) : (filteredOrdenes.length === 0 && !loading) ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm px-4">
-          <div className="h-12 w-12 rounded-2xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center text-slate-400 dark:text-slate-600 mb-4">
-            <Wrench className="h-6 w-6" />
-          </div>
-          <h4 className="font-bold text-slate-700 dark:text-slate-300">No hay órdenes de trabajo</h4>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs">
-            {search ? 'No se encontraron resultados para la búsqueda' : 'Registra una orden para comenzar el proceso técnico'}
-          </p>
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
+          <p className="text-xs text-slate-400">Cargando órdenes...</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredOrdenes.map((orden) => {
-            return (
-              <div 
-                key={orden.id_orden}
-                className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div>
-                  {/* Status header */}
-                  <div className="flex items-center justify-between mb-4">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      orden.estado_actual.nombre_estado === 'Completado'
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
-                        : orden.estado_actual.nombre_estado === 'En progreso'
-                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400'
-                        : 'bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400'
-                    }`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${
-                        orden.estado_actual.nombre_estado === 'Completado' ? 'bg-emerald-500' : orden.estado_actual.nombre_estado === 'En progreso' ? 'bg-blue-500' : 'bg-amber-500'
-                      }`} />
+          {filteredOrdenes.map((orden) => (
+            <div key={orden.id_orden} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex justify-between items-start">
+                   <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                      orden.estado_actual.nombre_estado === 'Completado' ? 'bg-emerald-50 text-emerald-600' :
+                      orden.estado_actual.nombre_estado === 'En progreso' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'
+                   }`}>
                       {orden.estado_actual.nombre_estado}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">ID: #{orden.id_orden}</span>
-                  </div>
-
-                  {/* Main Title & Vehicle details */}
-                  <div className="space-y-1.5 mb-4">
-                    <h4 className="font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1">{orden.motivo_ingreso}</h4>
-                    
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                      <Car className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span>
-                        {orden.vehiculo.marca} {orden.vehiculo.modelo} • <span className="font-mono font-bold bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[10px] text-slate-600 dark:text-slate-400">{orden.vehiculo.placa}</span>
-                      </span>
-                    </div>
-                    
-                    <div className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                      Cliente: {orden.vehiculo.cliente?.usuario?.nombre || 'Sin nombre'}
-                    </div>
-                  </div>
-
-                  {/* Diagnosis */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 text-xs border border-slate-100 dark:border-slate-800/50 mb-4">
-                    <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                      <FileText className="h-3 w-3" />
-                      Observaciones
-                    </div>
-                    <p className="text-slate-600 dark:text-slate-300 line-clamp-2 italic">
-                      &ldquo;{orden.observaciones || 'Sin observaciones'}&rdquo;
-                    </p>
-                  </div>
+                   </span>
+                   <span className="text-[10px] text-slate-400 font-mono">#{orden.id_orden}</span>
                 </div>
 
-                {/* Footer section (Actions and Details) */}
-                <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1 text-slate-400 dark:text-slate-500">
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>{new Date(orden.fecha_ingreso).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                    </div>
-                  </div>
+                <div>
+                   <h4 className="font-extrabold text-slate-800 dark:text-slate-100 line-clamp-1">{orden.motivo_ingreso}</h4>
+                   <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+                      <Car className="h-3 w-3" /> {orden.vehiculo.marca} {orden.vehiculo.modelo} ({orden.vehiculo.placa})
+                   </div>
+                   <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
+                      <User className="h-3 w-3" /> Cliente: {orden.vehiculo.cliente.usuario.nombre}
+                   </div>
+                </div>
 
-                  {/* Quick state change and options */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1 ml-auto">
-                      <button
-                        onClick={() => openEditModal(orden)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-amber-400 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                        title="Editar orden"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(orden.id_orden)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-red-400 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                        title="Eliminar orden"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 text-xs border border-slate-100 dark:border-slate-800">
+                   <p className="text-slate-600 dark:text-slate-400 italic line-clamp-2">{orden.observaciones || 'Sin observaciones adicionales'}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                   <div className="flex items-center gap-1 text-[10px] text-slate-500 font-bold uppercase">
+                      <Activity className="h-3 w-3" /> Prioridad: {orden.prioridad}
+                   </div>
+                   <div className="flex items-center gap-1 text-[10px] text-slate-500 font-bold uppercase justify-end">
+                      {orden.kilometraje_ingreso.toLocaleString()} KM
+                   </div>
                 </div>
               </div>
-            )
-          })}
+
+              <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                   <Calendar className="h-3.5 w-3.5" /> {new Date(orden.fecha_ingreso).toLocaleDateString()}
+                </div>
+                <div className="flex gap-1">
+                   <Link href={`/servicios-realizados?ordenId=${orden.id_orden}`} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600">
+                      <Eye className="h-4 w-4" />
+                   </Link>
+                   <button onClick={() => openEditModal(orden)} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600">
+                      <Edit2 className="h-4 w-4" />
+                   </button>
+                   <button onClick={() => handleDelete(orden.id_orden)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-600">
+                      <Trash2 className="h-4 w-4" />
+                   </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* CREATE/EDIT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
-          <div 
-            className="w-full max-w-lg rounded-3xl bg-white border border-slate-200 dark:border-slate-800 dark:bg-slate-900 shadow-2xl p-6 space-y-6 animate-scale-in"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="w-full max-w-xl rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
-                  {modalMode === 'create' ? 'Crear Orden de Trabajo' : 'Editar Orden de Trabajo'}
-                </h3>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                  Establece el diagnóstico inicial, tipo de servicio y asócialo al vehículo
-                </p>
-              </div>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+                {modalMode === 'create' ? 'Nueva Orden de Trabajo' : 'Editar Orden de Trabajo'}
+              </h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
             </div>
 
-            {/* Error alerts inside form */}
-            {formError && (
-              <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-200/40 dark:border-red-900/30">
-                <AlertCircle className="h-4.5 w-4.5 shrink-0" />
-                <span>{formError}</span>
-              </div>
-            )}
-
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Servicio Requerido / Motivo
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Cambio de bujías y afinación"
-                  value={servicio}
-                  onChange={(e) => setServicio(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-amber-500/25 dark:focus:ring-amber-400/25 text-sm transition-all"
-                />
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Motivo de Ingreso</label>
+                <input type="text" required value={motivo} onChange={(e) => setMotivo(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"/>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Observaciones / Diagnóstico Técnico
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Ej. El motor vibra al estar en marcha. El escáner arroja falla en cilindro 3."
-                  value={diagnostico}
-                  onChange={(e) => setDiagnostico(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-amber-500/25 dark:focus:ring-amber-400/25 text-sm transition-all resize-none"
-                />
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Vehículo</label>
+                <select value={vehiculoId} onChange={(e) => setVehiculoId(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
+                   {vehiculos.map(v => (
+                      <option key={v.id_vehiculo} value={v.id_vehiculo}>{v.marca} {v.modelo} ({v.placa}) - {v.cliente.usuario.nombre}</option>
+                   ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Estado Inicial
-                  </label>
-                  <select
-                    value={estado}
-                    onChange={(e) => setEstado(e.target.value as any)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-amber-500/25 dark:focus:ring-amber-400/25 text-sm transition-all"
-                  >
-                    <option value="Pendiente">Pendiente</option>
-                    <option value="En progreso">En progreso</option>
-                    <option value="Completado">Completado</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Fecha de Ingreso
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={fecha}
-                    onChange={(e) => setFecha(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-amber-500/25 dark:focus:ring-amber-400/25 text-sm transition-all"
-                  />
-                </div>
+                 <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Estado</label>
+                    <select value={estadoId} onChange={(e) => setEstadoId(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
+                       {estados.map(e => (
+                          <option key={e.id_estado} value={e.id_estado}>{e.nombre_estado}</option>
+                       ))}
+                    </select>
+                 </div>
+                 <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Prioridad</label>
+                    <select value={prioridad} onChange={(e) => setPrioridad(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
+                       <option value="Baja">Baja</option>
+                       <option value="Media">Media</option>
+                       <option value="Alta">Alta</option>
+                    </select>
+                 </div>
               </div>
 
-              {/* Vehicle select dropdown */}
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Kilometraje</label>
+                    <input type="number" required value={kilometraje} onChange={(e) => setKilometraje(parseInt(e.target.value, 10))} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"/>
+                 </div>
+                 <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Fecha Ingreso</label>
+                    <input type="date" required value={fechaIngreso} onChange={(e) => setFechaIngreso(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"/>
+                 </div>
+              </div>
+
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  Vehículo en Reparación
-                </label>
-                {vehiculos.length === 0 ? (
-                  <div className="text-xs text-red-500 bg-red-50 dark:bg-red-950/20 p-2.5 rounded-xl border border-red-200/40">
-                    No hay vehículos registrados en el sistema. Registra un vehículo antes de crear una orden.
-                  </div>
-                ) : (
-                  <select
-                    value={vehiculoId}
-                    onChange={(e) => setVehiculoId(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-amber-500/25 dark:focus:ring-amber-400/25 text-sm transition-all"
-                  >
-                    {vehiculos.map((v) => (
-                      <option key={v.id_vehiculo} value={v.id_vehiculo}>
-                        {v.marca} {v.modelo} (Placa: {v.placa}) • Propietario: {v.cliente?.usuario?.nombre || 'Sin nombre'}
-                      </option>
+                 <label className="text-[10px] font-bold text-slate-500 uppercase">Mecánico Asignado</label>
+                 <select value={mecanicoId} onChange={(e) => setMecanicoId(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
+                    <option value="">Sin asignar</option>
+                    {mecanicos.map(m => (
+                       <option key={m.id_mecanico} value={m.id_mecanico}>{m.usuario.nombre} - {m.especialidad}</option>
                     ))}
-                  </select>
-                )}
+                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800 text-sm font-semibold transition-colors cursor-pointer"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={formSubmitting || vehiculos.length === 0}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400 text-white font-semibold text-sm shadow-lg shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {formSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {modalMode === 'create' ? 'Guardar Orden' : 'Actualizar Orden'}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Observaciones / Diagnóstico Inicial</label>
+                <textarea rows={3} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm resize-none" />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 sticky bottom-0 bg-white dark:bg-slate-900 border-t">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold">Cancelar</button>
+                <button type="submit" disabled={formSubmitting} className="px-4 py-2 rounded-xl bg-amber-600 text-white font-bold text-sm disabled:opacity-50">
+                  {modalMode === 'create' ? 'Crear Orden' : 'Actualizar Orden'}
                 </button>
               </div>
             </form>

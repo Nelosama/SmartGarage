@@ -1,23 +1,9 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const query = searchParams.get('q') || ''
-
     const clientes = await prisma.cliente.findMany({
-      where: query
-        ? {
-            usuario: {
-              OR: [
-                { nombre: { contains: query, mode: 'insensitive' } },
-                { correo: { contains: query, mode: 'insensitive' } },
-                { telefono: { contains: query, mode: 'insensitive' } },
-              ],
-            }
-          }
-        : {},
       include: {
         usuario: true,
         _count: {
@@ -43,11 +29,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(flattenedClientes)
   } catch (error: any) {
-    console.error('API Error /api/clientes:', error)
-    return NextResponse.json({
-      error: 'Error al obtener los clientes',
-      details: error.message
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Error al obtener los clientes' }, { status: 500 })
   }
 }
 
@@ -57,15 +39,7 @@ export async function POST(request: Request) {
     const { nombre, telefono, email, direccion, identidad } = body
 
     if (!nombre || !telefono || !email || !direccion) {
-      return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
-    }
-
-    const existingUsuario = await prisma.usuario.findUnique({
-      where: { correo: email },
-    })
-
-    if (existingUsuario) {
-      return NextResponse.json({ error: 'Ya existe un usuario con este correo electrónico' }, { status: 400 })
+      return NextResponse.json({ error: 'Todos los campos obligatorios son requeridos' }, { status: 400 })
     }
 
     let rolCliente = await prisma.rol.findFirst({
@@ -90,7 +64,7 @@ export async function POST(request: Request) {
         }
       })
 
-      const cliente = await tx.cliente.create({
+      return await tx.cliente.create({
         data: {
           id_usuario: usuario.id_usuario,
           identidad,
@@ -100,16 +74,10 @@ export async function POST(request: Request) {
           usuario: true
         }
       })
-
-      return cliente
     })
 
     return NextResponse.json(result, { status: 201 })
   } catch (error: any) {
-    console.error('API Error /api/clientes POST:', error)
-    return NextResponse.json({
-      error: 'Error al crear el cliente',
-      details: error.message
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Error al crear el cliente', details: error.message }, { status: 500 })
   }
 }

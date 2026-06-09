@@ -65,7 +65,6 @@ export async function PUT(
     const body = await request.json()
     const { motivo_ingreso, observaciones, id_estado_actual, id_mecanico, prioridad, kilometraje_ingreso } = body
 
-    // Partial update support
     const data: any = {}
     if (motivo_ingreso) data.motivo_ingreso = motivo_ingreso
     if (observaciones !== undefined) data.observaciones = observaciones
