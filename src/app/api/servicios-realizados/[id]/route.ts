@@ -66,14 +66,6 @@ export async function PUT(
     if (precio_unitario !== undefined) data.precio_unitario = precio_unitario
     if (observaciones !== undefined) data.observaciones = observaciones
 
-    if (data.cantidad !== undefined || data.precio_unitario !== undefined) {
-      // Recalculate subtotal if needed
-      const current = await prisma.ordenServicio.findUnique({ where: { id_orden_servicio: id } })
-      const newQty = data.cantidad !== undefined ? data.cantidad : current?.cantidad || 1
-      const newPrice = data.precio_unitario !== undefined ? data.precio_unitario : current?.precio_unitario || 0
-      data.subtotal = Number(newQty) * Number(newPrice)
-    }
-
     const updatedServicio = await prisma.ordenServicio.update({
       where: { id_orden_servicio: id },
       data,

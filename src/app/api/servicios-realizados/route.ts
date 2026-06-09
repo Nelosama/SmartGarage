@@ -63,15 +63,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Campos requeridos faltantes' }, { status: 400 })
     }
 
-    const subtotal = Number(cantidad) * Number(precio_unitario)
-
     const servicioRealizado = await prisma.ordenServicio.create({
       data: {
         id_servicio,
         id_orden,
         cantidad: Number(cantidad) || 1,
         precio_unitario: Number(precio_unitario),
-        subtotal,
         observaciones
       },
       include: {
