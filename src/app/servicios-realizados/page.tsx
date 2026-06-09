@@ -227,14 +227,14 @@ function ServiciosRealizadosContent() {
 
       <div className="grid gap-6 sm:grid-cols-2 max-w-2xl">
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600"><DollarSign className="h-5 w-5" /></div>
+          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><DollarSign className="h-5 w-5" /></div>
           <div>
             <p className="text-[10px] text-slate-400 font-bold uppercase">Costo Total</p>
             <p className="text-xl font-extrabold text-slate-800 dark:text-slate-100">${totalCosto.toFixed(2)}</p>
           </div>
         </div>
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-amber-50 text-amber-600"><ClipboardList className="h-5 w-5" /></div>
+          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"><ClipboardList className="h-5 w-5" /></div>
           <div>
             <p className="text-[10px] text-slate-400 font-bold uppercase">Trabajos Realizados</p>
             <p className="text-xl font-extrabold text-slate-800 dark:text-slate-100">{servicios.length}</p>
@@ -243,7 +243,7 @@ function ServiciosRealizadosContent() {
       </div>
 
       {error && (
-        <div className="p-3 text-xs rounded-xl bg-red-50 text-red-600 border border-red-200 flex items-center gap-2">
+        <div className="p-3 text-xs rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 flex items-center gap-2">
           <AlertCircle className="h-4 w-4" /> {error}
         </div>
       )}
@@ -342,10 +342,27 @@ function ServiciosRealizadosContent() {
                 <textarea rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm resize-none" />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold">Cancelar</button>
-                <button type="submit" disabled={formSubmitting} className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-sm disabled:opacity-50">
-                  {modalMode === 'create' ? 'Guardar' : 'Actualizar'}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-semibold transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={formSubmitting}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm disabled:opacity-50 transition-colors shadow-lg shadow-emerald-500/20"
+                >
+                  {formSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Procesando...</span>
+                    </div>
+                  ) : (
+                    modalMode === 'create' ? 'Guardar' : 'Actualizar'
+                  )}
                 </button>
               </div>
             </form>

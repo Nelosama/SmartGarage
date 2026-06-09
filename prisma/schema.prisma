@@ -176,7 +176,7 @@ model OrdenServicio {
   id_servicio       Int
   cantidad          Int          @default(1)
   precio_unitario   Decimal      @db.Decimal(10, 2)
-  // subtotal       Decimal?     @default(dbgenerated()) @db.Decimal(10, 2)  // ← ELIMÍNALO
+  subtotal          Decimal?     @default(dbgenerated()) @db.Decimal(10, 2)
   observaciones     String?
   orden             OrdenTrabajo @relation(fields: [id_orden], references: [id_orden])
   servicio          Servicio     @relation(fields: [id_servicio], references: [id_servicio])
@@ -191,7 +191,7 @@ model OrdenRepuesto {
   id_repuesto       Int
   cantidad          Int          @default(1)
   precio_unitario   Decimal      @db.Decimal(10, 2)
-  subtotal          Decimal      @db.Decimal(10, 2)
+  subtotal          Decimal?     @default(dbgenerated()) @db.Decimal(10, 2)
   orden             OrdenTrabajo @relation(fields: [id_orden], references: [id_orden], onUpdate: Cascade, onDelete: Cascade)
   repuesto          Repuesto     @relation(fields: [id_repuesto], references: [id_repuesto], onUpdate: Cascade, onDelete: Restrict)
 
