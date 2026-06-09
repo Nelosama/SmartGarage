@@ -13,7 +13,10 @@ import {
   Moon, 
   Menu, 
   X,
-  Gauge
+  Gauge,
+  Activity,
+  Package,
+  Briefcase
 } from 'lucide-react'
 
 interface LayoutShellProps {
@@ -51,6 +54,9 @@ export default function LayoutShell({ children }: LayoutShellProps) {
     { name: 'Vehículos', href: '/vehiculos', icon: Car },
     { name: 'Órdenes de Trabajo', href: '/ordenes', icon: Wrench },
     { name: 'Servicios Realizados', href: '/servicios-realizados', icon: ClipboardList },
+    { name: 'Catálogo Servicios', href: '/servicios', icon: Activity },
+    { name: 'Inventario Repuestos', href: '/repuestos', icon: Package },
+    { name: 'Equipo Mecánico', href: '/mecanicos', icon: Briefcase },
   ]
 
   const getPageTitle = () => {
