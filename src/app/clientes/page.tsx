@@ -2,14 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  Plus, 
   Search, 
   Edit2, 
   Trash2, 
   Loader2, 
   Mail, 
   Phone, 
-  MapPin, 
   UserPlus, 
   X,
   AlertCircle,
@@ -50,7 +48,7 @@ export default function ClientesPage() {
   const [formError, setFormError] = useState<string | null>(null)
 
   // Fetch clients
-  const fetchClientes = async (query = '') => {
+  const fetchClientes = React.useCallback(async (query = '') => {
     try {
       setLoading(true)
       const res = await fetch(`/api/clientes${query ? `?q=${encodeURIComponent(query)}` : ''}`)
@@ -61,17 +59,26 @@ export default function ClientesPage() {
       const data = await res.json()
       setClientes(data)
       setError(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      setError(`Error: ${err.message}`)
+      setError(`Error: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    fetchClientes()
-  }, [])
+    let mounted = true
+    const loadData = async () => {
+      if (mounted) {
+        await fetchClientes()
+      }
+    }
+    void loadData()
+    return () => {
+      mounted = false
+    }
+  }, [fetchClientes])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -131,9 +138,9 @@ export default function ClientesPage() {
 
       setIsModalOpen(false)
       fetchClientes(search)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      setFormError(err.message)
+      setFormError(err instanceof Error ? err.message : String(err))
     } finally {
       setFormSubmitting(false)
     }
@@ -152,10 +159,10 @@ export default function ClientesPage() {
         throw new Error(data.details || data.error || 'Error al eliminar el cliente')
       }
 
-      fetchClientes(search)
-    } catch (err: any) {
+      void fetchClientes(search)
+    } catch (err: unknown) {
       console.error(err)
-      alert(err.message)
+      alert(err instanceof Error ? err.message : String(err))
     }
   }
 
@@ -255,12 +262,16 @@ export default function ClientesPage() {
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => openEditModal(cliente)}
+                          aria-label={`Editar cliente ${cliente.nombre}`}
+                          title="Editar cliente"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all cursor-pointer"
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(cliente.id)}
+                          aria-label={`Eliminar cliente ${cliente.nombre}`}
+                          title="Eliminar cliente"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -296,8 +307,11 @@ export default function ClientesPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Nombre Completo</label>
+                <label htmlFor="nombre" className="text-[10px] font-bold text-slate-500 uppercase">
+                  Nombre Completo <span className="text-red-500">*</span>
+                </label>
                 <input
+                  id="nombre"
                   type="text"
                   required
                   value={nombre}
@@ -308,45 +322,55 @@ export default function ClientesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Teléfono</label>
+                  <label htmlFor="telefono" className="text-[10px] font-bold text-slate-500 uppercase">
+                    Teléfono <span className="text-red-500">*</span>
+                  </label>
                   <input
+                    id="telefono"
                     type="tel"
                     required
                     value={telefono}
                     onChange={(e) => setTelefono(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Email</label>
+                  <label htmlFor="email" className="text-[10px] font-bold text-slate-500 uppercase">
+                    Email <span className="text-red-500">*</span>
+                  </label>
                   <input
+                    id="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">N° Identidad</label>
+                <label htmlFor="identidad" className="text-[10px] font-bold text-slate-500 uppercase">N° Identidad</label>
                 <input
+                  id="identidad"
                   type="text"
                   value={identidad}
                   onChange={(e) => setIdentidad(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Dirección</label>
+                <label htmlFor="direccion" className="text-[10px] font-bold text-slate-500 uppercase">
+                  Dirección <span className="text-red-500">*</span>
+                </label>
                 <textarea
+                  id="direccion"
                   required
                   rows={2}
                   value={direccion}
                   onChange={(e) => setDireccion(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm resize-none"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                 />
               </div>
 
@@ -354,7 +378,7 @@ export default function ClientesPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-sm font-semibold"
+                  className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm font-semibold"
                 >
                   Cancelar
                 </button>
