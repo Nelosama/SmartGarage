@@ -10,73 +10,78 @@ export async function GET(request: Request) {
     const whereClause: any = {}
 
     if (ordenIdParam) {
-      const ordenId = parseInt(ordenIdParam, 10)
-      if (!isNaN(ordenId)) {
-        whereClause.ordenId = ordenId
+      const id_orden = parseInt(ordenIdParam, 10)
+      if (!isNaN(id_orden)) {
+        whereClause.id_orden = id_orden
       }
     }
 
     if (query) {
       whereClause.OR = [
-        { descripcion: { contains: query, mode: 'insensitive' } },
-        { repuesto: { contains: query, mode: 'insensitive' } },
+        { observaciones: { contains: query, mode: 'insensitive' } },
+        {
+          servicio: {
+            nombre_servicio: { contains: query, mode: 'insensitive' }
+          }
+        }
       ]
     }
 
-    const servicios = await prisma.servicioRealizado.findMany({
+    const servicios = await prisma.ordenServicio.findMany({
       where: whereClause,
       include: {
+        servicio: true,
         orden: {
           include: {
             vehiculo: {
               include: {
-                cliente: true,
+                cliente: {
+                  include: {
+                    usuario: true
+                  }
+                },
               },
             },
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id_orden_servicio: 'desc' },
     })
 
     return NextResponse.json(servicios)
   } catch (error: any) {
-    console.error('Error fetching performed services:', error)
-    return NextResponse.json({ error: 'Error al obtener los servicios realizados' }, { status: 500 })
+    return NextResponse.json({ error: 'Error al obtener los servicios realizados', details: error.message }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { descripcion, repuesto, costo, ordenId } = body
+    const { id_servicio, id_orden, cantidad, precio_unitario, observaciones } = body
 
-    if (!descripcion || repuesto === undefined || costo === undefined || ordenId === undefined) {
-      return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
+    if (!id_servicio || !id_orden || cantidad === undefined || precio_unitario === undefined) {
+      return NextResponse.json({ error: 'Campos requeridos faltantes' }, { status: 400 })
     }
 
-    const parsedCosto = parseFloat(costo)
-    const parsedOrdenId = parseInt(ordenId, 10)
+    const subtotal = Number(cantidad) * Number(precio_unitario)
 
-    if (isNaN(parsedCosto) || isNaN(parsedOrdenId)) {
-      return NextResponse.json({ error: 'Costo u Orden ID inválidos' }, { status: 400 })
-    }
-
-    const servicioRealizado = await prisma.servicioRealizado.create({
+    const servicioRealizado = await prisma.ordenServicio.create({
       data: {
-        descripcion,
-        repuesto,
-        costo: parsedCosto,
-        ordenId: parsedOrdenId,
+        id_servicio,
+        id_orden,
+        cantidad: Number(cantidad) || 1,
+        precio_unitario: Number(precio_unitario),
+        subtotal,
+        observaciones
       },
       include: {
+        servicio: true,
         orden: true,
       },
     })
 
     return NextResponse.json(servicioRealizado, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating performed service:', error)
-    return NextResponse.json({ error: 'Error al crear el servicio realizado' }, { status: 500 })
+    return NextResponse.json({ error: 'Error al crear el servicio realizado', details: error.message }, { status: 500 })
   }
 }

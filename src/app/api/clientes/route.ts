@@ -1,27 +1,34 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const query = searchParams.get('q') || ''
-
     const clientes = await prisma.cliente.findMany({
-      where: query
-        ? {
-            OR: [
-              { nombre: { contains: query, mode: 'insensitive' } },
-              { email: { contains: query, mode: 'insensitive' } },
-              { telefono: { contains: query, mode: 'insensitive' } },
-            ],
-          }
-        : {},
-      orderBy: { nombre: 'asc' },
+      include: {
+        usuario: true,
+        _count: {
+          select: { vehiculos: true }
+        }
+      },
+      orderBy: {
+        usuario: {
+          nombre: 'asc'
+        }
+      },
     })
 
-    return NextResponse.json(clientes)
+    const flattenedClientes = clientes.map(c => ({
+      id: c.id_cliente,
+      nombre: c.usuario.nombre,
+      email: c.usuario.correo,
+      telefono: c.usuario.telefono,
+      direccion: c.direccion,
+      identidad: c.identidad,
+      _count: c._count
+    }))
+
+    return NextResponse.json(flattenedClientes)
   } catch (error: any) {
-    console.error('Error fetching clients:', error)
     return NextResponse.json({ error: 'Error al obtener los clientes' }, { status: 500 })
   }
 }
@@ -29,28 +36,48 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { nombre, telefono, email, direccion } = body
+    const { nombre, telefono, email, direccion, identidad } = body
 
     if (!nombre || !telefono || !email || !direccion) {
-      return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
+      return NextResponse.json({ error: 'Todos los campos obligatorios son requeridos' }, { status: 400 })
     }
 
-    // Check if client with this email already exists
-    const existing = await prisma.cliente.findUnique({
-      where: { email },
+    let rolCliente = await prisma.rol.findFirst({
+      where: { nombre_rol: 'Cliente' }
     })
 
-    if (existing) {
-      return NextResponse.json({ error: 'Ya existe un cliente con este correo electrónico' }, { status: 400 })
+    if (!rolCliente) {
+      rolCliente = await prisma.rol.create({
+        data: { nombre_rol: 'Cliente', descripcion: 'Rol para clientes del taller' }
+      })
     }
 
-    const cliente = await prisma.cliente.create({
-      data: { nombre, telefono, email, direccion },
+    const result = await prisma.$transaction(async (tx) => {
+      const usuario = await tx.usuario.create({
+        data: {
+          nombre,
+          correo: email,
+          telefono,
+          password_hash: 'temporalsync',
+          id_rol: rolCliente!.id_rol,
+          estado: 'Activo'
+        }
+      })
+
+      return await tx.cliente.create({
+        data: {
+          id_usuario: usuario.id_usuario,
+          identidad,
+          direccion,
+        },
+        include: {
+          usuario: true
+        }
+      })
     })
 
-    return NextResponse.json(cliente, { status: 201 })
+    return NextResponse.json(result, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating client:', error)
-    return NextResponse.json({ error: 'Error al crear el cliente' }, { status: 500 })
+    return NextResponse.json({ error: 'Error al crear el cliente', details: error.message }, { status: 500 })
   }
 }

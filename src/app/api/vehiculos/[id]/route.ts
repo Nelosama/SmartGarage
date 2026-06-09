@@ -14,9 +14,13 @@ export async function GET(
     }
 
     const vehiculo = await prisma.vehiculo.findUnique({
-      where: { id },
+      where: { id_vehiculo: id },
       include: {
-        cliente: true,
+        cliente: {
+          include: {
+            usuario: true
+          }
+        },
         ordenes: true,
       },
     })
@@ -27,7 +31,7 @@ export async function GET(
 
     return NextResponse.json(vehiculo)
   } catch (error: any) {
-    console.error('Error fetching vehicle details:', error)
+    console.error('API Error /api/vehiculos/[id]:', error)
     return NextResponse.json({ error: 'Error al obtener el vehículo' }, { status: 500 })
   }
 }
@@ -45,7 +49,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { placa, marca, modelo, anio, clienteId } = body
+    const { placa, marca, modelo, anio, clienteId, color, vin, tipo_combustible, kilometraje_actual } = body
 
     if (!placa || !marca || !modelo || anio === undefined || clienteId === undefined) {
       return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
@@ -58,11 +62,10 @@ export async function PUT(
       return NextResponse.json({ error: 'Año o Cliente ID inválidos' }, { status: 400 })
     }
 
-    // Check if another vehicle has this plate
     const existing = await prisma.vehiculo.findFirst({
       where: {
         placa,
-        id: { not: id },
+        id_vehiculo: { not: id },
       },
     })
 
@@ -71,22 +74,30 @@ export async function PUT(
     }
 
     const updatedVehiculo = await prisma.vehiculo.update({
-      where: { id },
+      where: { id_vehiculo: id },
       data: {
         placa,
         marca,
         modelo,
         anio: parsedAnio,
-        clienteId: parsedClienteId,
+        id_cliente: parsedClienteId,
+        color,
+        vin,
+        tipo_combustible,
+        kilometraje_actual: kilometraje_actual || 0
       },
       include: {
-        cliente: true,
+        cliente: {
+          include: {
+            usuario: true
+          }
+        },
       },
     })
 
     return NextResponse.json(updatedVehiculo)
   } catch (error: any) {
-    console.error('Error updating vehicle:', error)
+    console.error('API Error /api/vehiculos/[id] PUT:', error)
     return NextResponse.json({ error: 'Error al actualizar el vehículo' }, { status: 500 })
   }
 }
@@ -104,12 +115,12 @@ export async function DELETE(
     }
 
     await prisma.vehiculo.delete({
-      where: { id },
+      where: { id_vehiculo: id },
     })
 
     return NextResponse.json({ message: 'Vehículo eliminado correctamente' })
   } catch (error: any) {
-    console.error('Error deleting vehicle:', error)
+    console.error('API Error /api/vehiculos/[id] DELETE:', error)
     return NextResponse.json({ error: 'Error al eliminar el vehículo' }, { status: 500 })
   }
 }

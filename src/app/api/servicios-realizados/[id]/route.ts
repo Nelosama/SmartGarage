@@ -13,14 +13,19 @@ export async function GET(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
-    const servicio = await prisma.servicioRealizado.findUnique({
-      where: { id },
+    const servicio = await prisma.ordenServicio.findUnique({
+      where: { id_orden_servicio: id },
       include: {
+        servicio: true,
         orden: {
           include: {
             vehiculo: {
               include: {
-                cliente: true,
+                cliente: {
+                  include: {
+                    usuario: true
+                  }
+                },
               },
             },
           },
@@ -34,7 +39,7 @@ export async function GET(
 
     return NextResponse.json(servicio)
   } catch (error: any) {
-    console.error('Error fetching service details:', error)
+    console.error('API Error /api/servicios-realizados/[id]:', error)
     return NextResponse.json({ error: 'Error al obtener el servicio realizado' }, { status: 500 })
   }
 }
@@ -52,35 +57,35 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { descripcion, repuesto, costo, ordenId } = body
+    const { id_servicio, id_orden, cantidad, precio_unitario, observaciones } = body
 
-    if (!descripcion || repuesto === undefined || costo === undefined || ordenId === undefined) {
-      return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
+    const data: any = {}
+    if (id_servicio) data.id_servicio = id_servicio
+    if (id_orden) data.id_orden = id_orden
+    if (cantidad !== undefined) data.cantidad = cantidad
+    if (precio_unitario !== undefined) data.precio_unitario = precio_unitario
+    if (observaciones !== undefined) data.observaciones = observaciones
+
+    if (data.cantidad !== undefined || data.precio_unitario !== undefined) {
+      // Recalculate subtotal if needed
+      const current = await prisma.ordenServicio.findUnique({ where: { id_orden_servicio: id } })
+      const newQty = data.cantidad !== undefined ? data.cantidad : current?.cantidad || 1
+      const newPrice = data.precio_unitario !== undefined ? data.precio_unitario : current?.precio_unitario || 0
+      data.subtotal = Number(newQty) * Number(newPrice)
     }
 
-    const parsedCosto = parseFloat(costo)
-    const parsedOrdenId = parseInt(ordenId, 10)
-
-    if (isNaN(parsedCosto) || isNaN(parsedOrdenId)) {
-      return NextResponse.json({ error: 'Costo u Orden ID inválidos' }, { status: 400 })
-    }
-
-    const updatedServicio = await prisma.servicioRealizado.update({
-      where: { id },
-      data: {
-        descripcion,
-        repuesto,
-        costo: parsedCosto,
-        ordenId: parsedOrdenId,
-      },
+    const updatedServicio = await prisma.ordenServicio.update({
+      where: { id_orden_servicio: id },
+      data,
       include: {
+        servicio: true,
         orden: true,
       },
     })
 
     return NextResponse.json(updatedServicio)
   } catch (error: any) {
-    console.error('Error updating service:', error)
+    console.error('API Error /api/servicios-realizados/[id] PUT:', error)
     return NextResponse.json({ error: 'Error al actualizar el servicio realizado' }, { status: 500 })
   }
 }
@@ -97,13 +102,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
     }
 
-    await prisma.servicioRealizado.delete({
-      where: { id },
+    await prisma.ordenServicio.delete({
+      where: { id_orden_servicio: id },
     })
 
     return NextResponse.json({ message: 'Servicio realizado eliminado correctamente' })
   } catch (error: any) {
-    console.error('Error deleting service:', error)
+    console.error('API Error /api/servicios-realizados/[id] DELETE:', error)
     return NextResponse.json({ error: 'Error al eliminar el servicio realizado' }, { status: 500 })
   }
 }

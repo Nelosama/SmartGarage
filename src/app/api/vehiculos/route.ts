@@ -10,9 +10,9 @@ export async function GET(request: Request) {
     const whereClause: any = {}
 
     if (clienteIdParam) {
-      const clienteId = parseInt(clienteIdParam, 10)
-      if (!isNaN(clienteId)) {
-        whereClause.clienteId = clienteId
+      const id_cliente = parseInt(clienteIdParam, 10)
+      if (!isNaN(id_cliente)) {
+        whereClause.id_cliente = id_cliente
       }
     }
 
@@ -21,28 +21,42 @@ export async function GET(request: Request) {
         { placa: { contains: query, mode: 'insensitive' } },
         { marca: { contains: query, mode: 'insensitive' } },
         { modelo: { contains: query, mode: 'insensitive' } },
+        {
+          cliente: {
+            usuario: {
+              nombre: { contains: query, mode: 'insensitive' }
+            }
+          }
+        }
       ]
     }
 
     const vehiculos = await prisma.vehiculo.findMany({
       where: whereClause,
       include: {
-        cliente: true,
+        cliente: {
+          include: {
+            usuario: true
+          }
+        },
       },
       orderBy: { placa: 'asc' },
     })
 
     return NextResponse.json(vehiculos)
   } catch (error: any) {
-    console.error('Error fetching vehicles:', error)
-    return NextResponse.json({ error: 'Error al obtener los vehículos' }, { status: 500 })
+    console.error('API Error /api/vehiculos:', error)
+    return NextResponse.json({
+      error: 'Error al obtener los vehículos',
+      details: error.message
+    }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { placa, marca, modelo, anio, clienteId } = body
+    const { placa, marca, modelo, anio, clienteId, color, vin, tipo_combustible, kilometraje_actual } = body
 
     if (!placa || !marca || !modelo || anio === undefined || clienteId === undefined) {
       return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
@@ -55,7 +69,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Año o Cliente ID inválidos' }, { status: 400 })
     }
 
-    // Check if plate already exists
     const existing = await prisma.vehiculo.findUnique({
       where: { placa },
     })
@@ -70,16 +83,27 @@ export async function POST(request: Request) {
         marca,
         modelo,
         anio: parsedAnio,
-        clienteId: parsedClienteId,
+        id_cliente: parsedClienteId,
+        color,
+        vin,
+        tipo_combustible,
+        kilometraje_actual: kilometraje_actual || 0
       },
       include: {
-        cliente: true,
+        cliente: {
+          include: {
+            usuario: true
+          }
+        },
       },
     })
 
     return NextResponse.json(vehiculo, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating vehicle:', error)
-    return NextResponse.json({ error: 'Error al crear el vehículo' }, { status: 500 })
+    console.error('API Error /api/vehiculos POST:', error)
+    return NextResponse.json({
+      error: 'Error al crear el vehículo',
+      details: error.message
+    }, { status: 500 })
   }
 }

@@ -6,25 +6,27 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const vehiculoIdParam = searchParams.get('vehiculoId')
     const query = searchParams.get('q') || ''
-    const estado = searchParams.get('estado') || ''
+    const estadoIdParam = searchParams.get('estadoId')
 
     const whereClause: any = {}
 
     if (vehiculoIdParam) {
-      const vehiculoId = parseInt(vehiculoIdParam, 10)
-      if (!isNaN(vehiculoId)) {
-        whereClause.vehiculoId = vehiculoId
+      const id_vehiculo = parseInt(vehiculoIdParam, 10)
+      if (!isNaN(id_vehiculo)) {
+        whereClause.id_vehiculo = id_vehiculo
       }
     }
 
-    if (estado) {
-      whereClause.estado = estado
+    if (estadoIdParam) {
+      const id_estado_actual = parseInt(estadoIdParam, 10)
+      if (!isNaN(id_estado_actual)) {
+        whereClause.id_estado_actual = id_estado_actual
+      }
     }
 
     if (query) {
       whereClause.OR = [
-        { servicio: { contains: query, mode: 'insensitive' } },
-        { diagnostico: { contains: query, mode: 'insensitive' } },
+        { motivo_ingreso: { contains: query, mode: 'insensitive' } },
         {
           vehiculo: {
             OR: [
@@ -34,68 +36,102 @@ export async function GET(request: Request) {
             ],
           },
         },
+        {
+          cliente: {
+            usuario: {
+              nombre: { contains: query, mode: 'insensitive' }
+            }
+          }
+        }
       ]
     }
 
-    const ordenes = await prisma.orden.findMany({
+    const ordenes = await prisma.ordenTrabajo.findMany({
       where: whereClause,
       include: {
         vehiculo: {
           include: {
-            cliente: true,
+            cliente: {
+              include: {
+                usuario: true
+              }
+            },
           },
         },
-        serviciosRealizados: true,
+        estado_actual: true,
+        orden_servicios: {
+          include: {
+            servicio: true
+          }
+        },
+        orden_repuestos: {
+          include: {
+            repuesto: true
+          }
+        }
       },
-      orderBy: { fecha: 'desc' },
+      orderBy: { fecha_ingreso: 'desc' },
     })
 
     return NextResponse.json(ordenes)
   } catch (error: any) {
-    console.error('Error fetching orders:', error)
-    return NextResponse.json({ error: 'Error al obtener las órdenes' }, { status: 500 })
+    console.error('API Error /api/ordenes:', error)
+    return NextResponse.json({
+      error: 'Error al obtener las órdenes',
+      details: error.message
+    }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { servicio, diagnostico, estado, fecha, vehiculoId } = body
+    const {
+      id_cliente,
+      id_vehiculo,
+      id_mecanico,
+      id_estado_actual,
+      kilometraje_ingreso,
+      motivo_ingreso,
+      prioridad,
+      observaciones
+    } = body
 
-    if (!servicio || !diagnostico || !estado || !fecha || vehiculoId === undefined) {
-      return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
+    if (!id_cliente || !id_vehiculo || !id_estado_actual || kilometraje_ingreso === undefined || !motivo_ingreso) {
+      return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
     }
 
-    const parsedVehiculoId = parseInt(vehiculoId, 10)
-
-    if (isNaN(parsedVehiculoId)) {
-      return NextResponse.json({ error: 'Vehículo ID inválido' }, { status: 400 })
-    }
-
-    if (!['Pendiente', 'En progreso', 'Completado'].includes(estado)) {
-      return NextResponse.json({ error: 'Estado inválido. Debe ser Pendiente, En progreso o Completado' }, { status: 400 })
-    }
-
-    const orden = await prisma.orden.create({
+    const orden = await prisma.ordenTrabajo.create({
       data: {
-        servicio,
-        diagnostico,
-        estado,
-        fecha: new Date(fecha),
-        vehiculoId: parsedVehiculoId,
+        id_cliente,
+        id_vehiculo,
+        id_mecanico,
+        id_estado_actual,
+        kilometraje_ingreso,
+        motivo_ingreso,
+        prioridad: prioridad || 'Media',
+        observaciones,
       },
       include: {
         vehiculo: {
           include: {
-            cliente: true,
+            cliente: {
+              include: {
+                usuario: true
+              }
+            },
           },
         },
+        estado_actual: true
       },
     })
 
     return NextResponse.json(orden, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating order:', error)
-    return NextResponse.json({ error: 'Error al crear la orden' }, { status: 500 })
+    console.error('API Error /api/ordenes POST:', error)
+    return NextResponse.json({
+      error: 'Error al crear la orden',
+      details: error.message
+    }, { status: 500 })
   }
 }
