@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: Request) {
   try {
@@ -7,7 +8,7 @@ export async function GET(request: Request) {
     const clienteIdParam = searchParams.get('clienteId')
     const query = searchParams.get('q') || ''
 
-    const whereClause: any = {}
+    const whereClause: Prisma.VehiculoWhereInput = {}
 
     if (clienteIdParam) {
       const id_cliente = parseInt(clienteIdParam, 10)
@@ -44,11 +45,12 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json(vehiculos)
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('API Error /api/vehiculos:', error)
     return NextResponse.json({
       error: 'Error al obtener los vehículos',
-      details: error.message
+      details: message
     }, { status: 500 })
   }
 }
@@ -99,11 +101,12 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(vehiculo, { status: 201 })
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('API Error /api/vehiculos POST:', error)
     return NextResponse.json({
       error: 'Error al crear el vehículo',
-      details: error.message
+      details: message
     }, { status: 500 })
   }
 }

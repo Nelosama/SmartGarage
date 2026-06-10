@@ -69,22 +69,27 @@ export default function ClientesPage() {
   }, [])
 
   useEffect(() => {
-    let mounted = true
-    const initFetch = async () => {
+    let mounted = true;
+    (async () => {
       if (mounted) {
         await fetchClientes()
       }
-    }
-    void initFetch()
+    })();
     return () => {
       mounted = false
     }
   }, [fetchClientes])
 
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void fetchClientes(search)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search, fetchClientes])
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setSearch(val)
-    fetchClientes(val)
+    setSearch(e.target.value)
   }
 
   const openCreateModal = () => {

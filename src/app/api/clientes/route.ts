@@ -1,9 +1,25 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const query = searchParams.get('q') || ''
+
+    const whereClause: Prisma.ClienteWhereInput = {}
+
+    if (query) {
+      whereClause.OR = [
+        { usuario: { nombre: { contains: query, mode: 'insensitive' } } },
+        { usuario: { correo: { contains: query, mode: 'insensitive' } } },
+        { usuario: { telefono: { contains: query, mode: 'insensitive' } } },
+        { identidad: { contains: query, mode: 'insensitive' } },
+      ]
+    }
+
     const clientes = await prisma.cliente.findMany({
+      where: whereClause,
       include: {
         usuario: true,
         _count: {
@@ -28,7 +44,8 @@ export async function GET() {
     }))
 
     return NextResponse.json(flattenedClientes)
-  } catch (error: any) {
+  } catch (error) {
+    console.error('GET /api/clientes error:', error)
     return NextResponse.json({ error: 'Error al obtener los clientes' }, { status: 500 })
   }
 }
@@ -77,7 +94,9 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(result, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Error al crear el cliente', details: error.message }, { status: 500 })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error('POST /api/clientes error:', error)
+    return NextResponse.json({ error: 'Error al crear el cliente', details: message }, { status: 500 })
   }
 }
