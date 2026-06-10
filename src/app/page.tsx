@@ -5,11 +5,8 @@ import {
   Car,
   Wrench,
   TrendingUp,
-  Clock,
-  CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  Plus,
   ClipboardList
 } from 'lucide-react'
 
@@ -26,7 +23,24 @@ export default async function DashboardPage() {
     recaudado: 0
   }
 
-  let recentOrders: any[] = []
+  let recentOrders: {
+    id_orden: number;
+    motivo_ingreso: string;
+    fecha_ingreso: Date;
+    vehiculo: {
+      marca: string;
+      modelo: string;
+      placa: string;
+      cliente: {
+        usuario: {
+          nombre: string;
+        } | null;
+      } | null;
+    };
+    estado_actual: {
+      nombre_estado: string;
+    };
+  }[] = []
 
   try {
     const [
@@ -72,8 +86,9 @@ export default async function DashboardPage() {
       completadas,
       recaudado: totalRecaudado
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Database connection failed:', error)
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center space-y-4">
         <div className="p-4 rounded-full bg-red-50 dark:bg-red-950/20 text-red-600">
@@ -84,7 +99,7 @@ export default async function DashboardPage() {
           No se pudo establecer conexión con la base de datos de Supabase.
           Por favor, verifique su archivo <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800">.env</code>.
         </p>
-        <p className="text-xs text-slate-400 font-mono">{error.message}</p>
+        <p className="text-xs text-slate-400 font-mono">{errorMsg}</p>
       </div>
     )
   }
@@ -96,10 +111,10 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8 animate-slide-up">
       {/* Welcome banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-white shadow-xl shadow-blue-500/10">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-600 to-orange-700 p-8 text-white shadow-xl shadow-orange-500/10">
         <div className="relative z-10 max-w-xl">
           <h2 className="text-2xl font-black md:text-3xl">Panel de Control de SmartGarage</h2>
-          <p className="mt-2 text-sm text-blue-100 leading-relaxed md:text-base">
+          <p className="mt-2 text-sm text-orange-100 leading-relaxed md:text-base">
             Bienvenido al sistema. Administra de forma integral las órdenes de trabajo, clientes, vehículos y servicios facturados del taller mecánico en tiempo real.
           </p>
         </div>
@@ -115,7 +130,7 @@ export default async function DashboardPage() {
             <h3 className="text-3xl font-extrabold tracking-tight">{stats.clientes}</h3>
             <p className="text-[10px] text-emerald-500 font-medium">Activos en el sistema</p>
           </div>
-          <div className="p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400">
+          <div className="p-3.5 rounded-xl bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400">
             <Users className="h-6 w-6" />
           </div>
         </div>
@@ -127,7 +142,7 @@ export default async function DashboardPage() {
             <h3 className="text-3xl font-extrabold tracking-tight">{stats.vehiculos}</h3>
             <p className="text-[10px] text-emerald-500 font-medium">Flota registrada</p>
           </div>
-          <div className="p-3.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400">
+          <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
             <Car className="h-6 w-6" />
           </div>
         </div>
@@ -173,7 +188,7 @@ export default async function DashboardPage() {
             </div>
             <Link
               href="/ordenes"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+              className="text-xs font-semibold text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300 flex items-center gap-1"
             >
               Ver todas <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -204,10 +219,10 @@ export default async function DashboardPage() {
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${orden.estado_actual.nombre_estado === 'Completado'
                         ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400'
                         : orden.estado_actual.nombre_estado === 'En progreso'
-                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400'
+                          ? 'bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400'
                           : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400'
                         }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${orden.estado_actual.nombre_estado === 'Completado' ? 'bg-emerald-500' : orden.estado_actual.nombre_estado === 'En progreso' ? 'bg-blue-500' : 'bg-amber-500'
+                        <span className={`h-1.5 w-1.5 rounded-full ${orden.estado_actual.nombre_estado === 'Completado' ? 'bg-emerald-500' : orden.estado_actual.nombre_estado === 'En progreso' ? 'bg-orange-500' : 'bg-amber-500'
                           }`} />
                         {orden.estado_actual.nombre_estado}
                       </span>
@@ -231,11 +246,11 @@ export default async function DashboardPage() {
             <div className="mt-6 space-y-4">
               <div className="flex items-center justify-between text-sm font-semibold">
                 <span className="text-slate-500 dark:text-slate-400">Tasa de Finalización</span>
-                <span className="text-blue-600 dark:text-blue-400">{completionRate}%</span>
+                <span className="text-orange-600 dark:text-orange-400">{completionRate}%</span>
               </div>
               <div className="h-3.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                 <div
-                  className="h-full bg-gradient-to-r from-blue-600 to-emerald-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-orange-600 to-emerald-500 rounded-full transition-all duration-500"
                   style={{ width: `${completionRate}%` }}
                 />
               </div>
@@ -246,7 +261,7 @@ export default async function DashboardPage() {
                 </div>
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950">
                   <p className="text-slate-400 dark:text-slate-500 font-medium">Activas</p>
-                  <p className="font-bold text-lg text-blue-600 dark:text-blue-400 mt-0.5">{activeOrdersCount}</p>
+                  <p className="font-bold text-lg text-orange-600 dark:text-orange-400 mt-0.5">{activeOrdersCount}</p>
                 </div>
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950">
                   <p className="text-slate-400 dark:text-slate-500 font-medium">Listas</p>
@@ -265,18 +280,18 @@ export default async function DashboardPage() {
             <div className="grid grid-cols-2 gap-3 mt-6">
               <Link
                 href="/clientes"
-                className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-blue-500/30 hover:bg-blue-50/10 dark:border-slate-800 dark:hover:border-blue-400/20 dark:hover:bg-blue-950/10 text-center transition-all duration-200"
+                className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-orange-500/30 hover:bg-orange-50/10 dark:border-slate-800 dark:hover:border-orange-400/20 dark:hover:bg-orange-950/10 text-center transition-all duration-200"
               >
-                <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400">
+                <div className="p-2.5 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">
                   <Users className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Nuevo Cliente</span>
               </Link>
               <Link
                 href="/vehiculos"
-                className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-indigo-500/30 hover:bg-indigo-50/10 dark:border-slate-800 dark:hover:border-indigo-400/20 dark:hover:bg-indigo-950/10 text-center transition-all duration-200"
+                className="flex flex-col items-center gap-2 p-3.5 rounded-xl border border-slate-100 hover:border-slate-500/30 hover:bg-slate-50/10 dark:border-slate-800 dark:hover:border-slate-400/20 dark:hover:bg-slate-950/10 text-center transition-all duration-200"
               >
-                <div className="p-2.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400">
+                <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                   <Car className="h-5 w-5" />
                 </div>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Nuevo Vehículo</span>

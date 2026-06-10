@@ -1,0 +1,34 @@
+
+> smart-garage@0.1.0 dev /app
+> next dev --webpack --webpack
+
+▲ Next.js 16.2.7 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+- Environments: .env
+✓ Ready in 587ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+⚠ Duplicate page detected. src/app/page.js and src/app/page.tsx resolve to /
+⚠ Duplicate page detected. src/app/clientes/page.js and src/app/clientes/page.tsx resolve to /clientes
+⚠ Duplicate page detected. src/app/ordenes/page.js and src/app/ordenes/page.tsx resolve to /ordenes
+⚠ Duplicate page detected. src/app/vehiculos/page.js and src/app/vehiculos/page.tsx resolve to /vehiculos
+⚠ Duplicate page detected. src/app/page.js and src/app/page.tsx resolve to /
+⚠ Duplicate page detected. src/app/clientes/page.js and src/app/clientes/page.tsx resolve to /clientes
+⚠ Duplicate page detected. src/app/ordenes/page.js and src/app/ordenes/page.tsx resolve to /ordenes
+⚠ Duplicate page detected. src/app/vehiculos/page.js and src/app/vehiculos/page.tsx resolve to /vehiculos
+
+○ Compiling / ...
+ GET / 200 in 10.0s (next.js: 8.3s, application-code: 1690ms)
+ GET / 200 in 1001ms (next.js: 191ms, application-code: 810ms)
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+ GET /login 200 in 1119ms (next.js: 672ms, proxy.ts: 8ms, application-code: 439ms)
+ GET / 200 in 592ms (next.js: 20ms, proxy.ts: 11ms, application-code: 561ms)
+ GET /login 200 in 78ms (next.js: 4ms, proxy.ts: 8ms, application-code: 66ms)
+ GET /login 200 in 379ms (next.js: 142ms, proxy.ts: 9ms, application-code: 228ms)
+ GET / 200 in 873ms (next.js: 19ms, proxy.ts: 11ms, application-code: 844ms)
+ GET / 200 in 760ms (next.js: 4ms, proxy.ts: 8ms, application-code: 748ms)
+ GET /login 200 in 82ms (next.js: 5ms, proxy.ts: 8ms, application-code: 69ms)
