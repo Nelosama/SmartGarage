@@ -43,7 +43,7 @@
   --card: #ffffff;
   --card-foreground: #0f172a;
   --border: #e2e8f0;
-  --primary: #3c52f2;
+  --primary: #f97316; /* Safety Orange */
   --primary-foreground: #ffffff;
   --muted: #64748b;
   --muted-foreground: #94a3b8;
@@ -54,12 +54,13 @@
 }
 
 .dark {
-  --background: #090d16;
+  color-scheme: dark;
+  --background: #0f172a; /* Deep Slate */
   --foreground: #f8fafc;
-  --card: #111827;
+  --card: #1e293b;
   --card-foreground: #f8fafc;
-  --border: #1f2937;
-  --primary: #577cfb;
+  --border: #334155;
+  --primary: #fb923c; /* Brighter Safety Orange */
   --primary-foreground: #ffffff;
   --muted: #94a3b8;
   --muted-foreground: #64748b;
