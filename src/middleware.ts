@@ -1,36 +1,32 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { withAuth } from "next-auth/middleware"
+import { NextResponse } from "next/server"
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const authSession = request.cookies.get('auth-session');
+export default withAuth(
+  function middleware(req) {
+    const { pathname } = req.nextUrl
+    const token = req.nextauth.token
+    const id_rol = token?.id_rol as number
 
-  // If trying to access protected routes without a session
-  if (!authSession && pathname !== '/login' && !pathname.startsWith('/api/') && !pathname.includes('.')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
-  }
+    if (id_rol === 1) return NextResponse.next()
+    if (id_rol === 2) {
+      const allowed = ['/clientes', '/vehiculos', '/ordenes', '/servicios-realizados', '/api/']
+      if (pathname === '/' || allowed.some(path => pathname.startsWith(path))) return NextResponse.next()
+    }
+    if (id_rol === 3) {
+      const allowed = ['/ordenes', '/diagnosticos', '/servicios-realizados', '/api/']
+      if (pathname === '/' || allowed.some(path => pathname.startsWith(path))) return NextResponse.next()
+    }
+    if (id_rol === 4) {
+      const allowed = ['/vehiculos', '/ordenes', '/api/']
+      if (pathname === '/' || allowed.some(path => pathname.startsWith(path))) return NextResponse.next()
+    }
 
-  // If trying to access login page with an active session
-  if (authSession && pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/';
-    return NextResponse.redirect(url);
-  }
-
-  return NextResponse.next();
-}
+    if (pathname === '/') return NextResponse.next()
+    return NextResponse.redirect(new URL("/", req.url))
+  },
+  { callbacks: { authorized: ({ token }) => !!token } }
+)
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
-};
+  matcher: ['/((?!api/auth|login|_next/static|_next/image|favicon.ico).*)'],
+}

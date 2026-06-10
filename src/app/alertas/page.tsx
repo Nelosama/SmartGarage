@@ -1,0 +1,57 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Bell, AlertTriangle, CheckCircle, Car } from 'lucide-react'
+
+export default function AlertasPage() {
+  const [alertas, setAlertas] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/alertas_mantenimiento').then(res => res.json()).then(data => {
+      setAlertas(Array.isArray(data) ? data : [])
+      setLoading(false)
+    })
+  }, [])
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+          <Bell className="h-8 w-8 text-orange-600" />
+          Alertas de Mantenimiento
+        </h1>
+        <p className="text-slate-500 text-sm">Notificaciones preventivas basadas en el kilometraje.</p>
+      </div>
+
+      <div className="grid gap-4">
+        {loading ? (
+          <p className="text-center text-slate-400 py-12">Cargando alertas...</p>
+        ) : alertas.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
+            <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+            <h3 className="font-bold text-slate-800">Todo en orden</h3>
+            <p className="text-slate-500 text-sm">No hay alertas de mantenimiento pendientes.</p>
+          </div>
+        ) : alertas.map(a => (
+          <div key={a.id_alerta} className="bg-white border border-slate-200 rounded-2xl p-5 flex items-start gap-4 shadow-sm hover:border-orange-200 transition-colors">
+            <div className={`p-3 rounded-xl ${a.estado === 'Pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <div className="flex-1">
+              <div className="flex justify-between items-start">
+                <h3 className="font-bold text-slate-800">{a.tipo_mantenimiento}</h3>
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID #{a.id_alerta}</span>
+              </div>
+              <p className="text-sm text-slate-600 mt-1">{a.descripcion}</p>
+              <div className="mt-4 flex items-center gap-6 text-xs font-semibold text-slate-400">
+                <span className="flex items-center gap-1.5"><Car className="h-3.5 w-3.5" /> Vehículo #{a.id_vehiculo}</span>
+                <span className="flex items-center gap-1.5 font-mono bg-slate-100 px-2 py-0.5 rounded">Fecha: {new Date(a.fecha_alerta).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

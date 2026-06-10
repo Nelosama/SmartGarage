@@ -159,7 +159,6 @@ function ServiciosRealizadosContent() {
 
       const url = modalMode === 'create' ? '/api/servicios-realizados' : `/api/servicios-realizados/${selectedServicio?.id_orden_servicio}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -211,81 +210,81 @@ function ServiciosRealizadosContent() {
         <div>
           <div className="flex items-center gap-2">
             {filterOrdenId && (
-              <button onClick={clearFilter} className="p-1 rounded-lg text-slate-500 hover:bg-slate-100"><ArrowLeft className="h-4 w-4" /></button>
+              <button onClick={clearFilter} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"><ArrowLeft className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all" /></button>
             )}
-            <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100">Servicios Aplicados</h2>
+            <h2 className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Servicios Aplicados</h2>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">Control de trabajos y costos por orden</p>
+          <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Control de trabajos y costos por orden</p>
         </div>
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg transition-all"
+          className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"
         >
-          <Plus className="h-4.5 w-4.5" /> Registrar Trabajo
+          <Plus className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all" /> Registrar Trabajo
         </button>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 max-w-2xl">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><DollarSign className="h-5 w-5" /></div>
+      <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+        <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+          <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"><DollarSign className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all" /></div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase">Costo Total</p>
-            <p className="text-xl font-extrabold text-slate-800 dark:text-slate-100">${totalCosto.toFixed(2)}</p>
+            <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Costo Total</p>
+            <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">L {totalCosto.toFixed(2)}</p>
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"><ClipboardList className="h-5 w-5" /></div>
+        <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+          <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"><ClipboardList className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all" /></div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase">Trabajos Realizados</p>
-            <p className="text-xl font-extrabold text-slate-800 dark:text-slate-100">{servicios.length}</p>
+            <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Trabajos Realizados</p>
+            <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">{servicios.length}</p>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="p-3 text-xs rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4" /> {error}
+        <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+          <AlertCircle className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all" /> {error}
         </div>
       )}
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
-          <p className="text-xs text-slate-400">Cargando...</p>
+        <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+          <Loader2 className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all" />
+          <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Cargando...</p>
         </div>
       ) : (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
+        <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+          <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+            <table className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-6">Orden / Vehículo</th>
-                  <th className="py-3 px-6">Servicio</th>
-                  <th className="py-3 px-6">Subtotal</th>
-                  <th className="py-3 px-6 text-right">Acciones</th>
+                <tr className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                  <th className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Orden / Vehículo</th>
+                  <th className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Servicio</th>
+                  <th className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Subtotal</th>
+                  <th className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
                 {servicios.map((srv) => (
-                  <tr key={srv.id_orden_servicio} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10 transition-colors">
-                    <td className="py-4 px-6">
+                  <tr key={srv.id_orden_servicio} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                    <td className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
                       <div>
-                        <p className="font-bold text-slate-800 dark:text-slate-200">Orden #{srv.id_orden}</p>
-                        <p className="text-[10px] text-indigo-500 font-semibold">{srv.orden.vehiculo.placa} ({srv.orden.vehiculo.cliente.usuario.nombre})</p>
+                        <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Orden #{srv.id_orden}</p>
+                        <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">{srv.orden.vehiculo.placa} ({srv.orden.vehiculo.cliente.usuario.nombre})</p>
                       </div>
                     </td>
-                    <td className="py-4 px-6">
-                      <p className="font-bold text-slate-700 dark:text-slate-200">{srv.servicio.nombre_servicio}</p>
-                      <p className="text-[10px] text-slate-400 italic line-clamp-1">{srv.observaciones}</p>
+                    <td className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                      <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">{srv.servicio.nombre_servicio}</p>
+                      <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">{srv.observaciones}</p>
                     </td>
-                    <td className="py-4 px-6">
-                      <span className="font-bold text-emerald-500">${Number(srv.subtotal).toFixed(2)}</span>
-                      <p className="text-[9px] text-slate-400">{srv.cantidad} x ${Number(srv.precio_unitario).toFixed(2)}</p>
+                    <td className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                      <span className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">L {Number(srv.subtotal).toFixed(2)}</span>
+                      <p className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">{srv.cantidad} x L {Number(srv.precio_unitario).toFixed(2)}</p>
                     </td>
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button onClick={() => openEditModal(srv)} className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 transition-all cursor-pointer"><Edit2 className="h-4 w-4" /></button>
-                        <button onClick={() => handleDelete(srv.id_orden_servicio)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 transition-all cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                    <td className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                      <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                        <button onClick={() => openEditModal(srv)} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"><Edit2 className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all" /></button>
+                        <button onClick={() => handleDelete(srv.id_orden_servicio)} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"><Trash2 className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all" /></button>
                       </div>
                     </td>
                   </tr>
@@ -298,55 +297,55 @@ function ServiciosRealizadosContent() {
 
       {/* CREATE/EDIT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+        <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+          <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+            <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+              <h3 className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
                 {modalMode === 'create' ? 'Registrar Trabajo Realizado' : 'Editar Detalle de Servicio'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
+              <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"><X /></button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Orden de Trabajo</label>
-                <select value={ordenId} onChange={(e) => setOrdenId(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
+            <form onSubmit={handleSubmit} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+              <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                <label className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Orden de Trabajo</label>
+                <select value={ordenId} onChange={(e) => setOrdenId(e.target.value)} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
                    {ordenes.map(o => (
                       <option key={o.id_orden} value={o.id_orden}>Orden #{o.id_orden} - {o.vehiculo.placa} ({o.vehiculo.cliente.usuario.nombre})</option>
                    ))}
                 </select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Servicio Realizado</label>
-                <select value={idServicio} onChange={(e) => handleCatalogServiceChange(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
+              <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                <label className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Servicio Realizado</label>
+                <select value={idServicio} onChange={(e) => handleCatalogServiceChange(e.target.value)} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
                    {catalogoServicios.map(s => (
-                      <option key={s.id_servicio} value={s.id_servicio}>{s.nombre_servicio} (Base: ${Number(s.precio_base).toFixed(2)})</option>
+                      <option key={s.id_servicio} value={s.id_servicio}>{s.nombre_servicio} (Base: L {Number(s.precio_base).toFixed(2)})</option>
                    ))}
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Cantidad</label>
-                  <input type="number" required min="1" value={cantidad} onChange={(e) => setCantidad(parseInt(e.target.value, 10))} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"/>
+              <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                  <label className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Cantidad</label>
+                  <input type="number" required min="1" value={cantidad} onChange={(e) => setCantidad(parseInt(e.target.value, 10))} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"/>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Precio Unitario ($)</label>
-                  <input type="number" required step="0.01" value={precioUnitario} onChange={(e) => setPrecioUnitario(parseFloat(e.target.value))} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"/>
+                <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                  <label className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Precio Unitario (L)</label>
+                  <input type="number" required step="0.01" value={precioUnitario} onChange={(e) => setPrecioUnitario(parseFloat(e.target.value))} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"/>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Observaciones Específicas</label>
-                <textarea rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm resize-none" />
+              <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
+                <label className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Observaciones Específicas</label>
+                <textarea rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all" />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-semibold transition-colors"
+                  className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"
                 >
                   Cancelar
                 </button>

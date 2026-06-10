@@ -10,8 +10,7 @@ import {
   Wrench,
   X,
   AlertCircle,
-  Briefcase,
-  User
+  Briefcase
 } from 'lucide-react'
 
 interface Mecanico {
@@ -98,7 +97,6 @@ export default function MecanicosPage() {
       setFormSubmitting(true)
       const url = modalMode === 'create' ? '/api/mecanicos' : `/api/mecanicos/${selectedMecanico?.id_mecanico}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -140,109 +138,168 @@ export default function MecanicosPage() {
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100">Equipo de Mecánicos</h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Gestión de personal técnico y disponibilidad</p>
+          <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+            <Briefcase className="h-8 w-8 text-orange-600" />
+            Equipo de Mecánicos
+          </h1>
+          <p className="text-slate-500 text-sm">Gestión de personal técnico y disponibilidad.</p>
         </div>
         <button
           onClick={openCreateModal}
-          className="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg transition-all cursor-pointer"
+          className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95"
         >
-          <Plus className="h-4.5 w-4.5" /> Registrar Mecánico
+          <Plus className="h-4 w-4" />
+          Registrar Mecánico
         </button>
       </div>
 
-      <div className="relative w-full max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Buscar mecánico o especialidad..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-amber-500/20 outline-none"
-        />
-      </div>
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar por nombre o especialidad..."
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
 
-      {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="animate-spin text-amber-600" /></div>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-          <table className="w-full text-left text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 font-bold uppercase text-[10px] tracking-wider border-b border-slate-100 dark:border-slate-800">
-                <th className="py-3 px-6">Nombre / Correo</th>
-                <th className="py-3 px-6">Especialidad</th>
-                <th className="py-3 px-6">Estado</th>
-                <th className="py-3 px-6 text-right">Acciones</th>
+              <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                <th className="px-6 py-4">Mecánico</th>
+                <th className="px-6 py-4">Especialidad</th>
+                <th className="px-6 py-4 text-center">Estado</th>
+                <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredMecanicos.map(m => (
-                <tr key={m.id_mecanico} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10">
-                  <td className="py-4 px-6">
-                    <p className="font-bold text-slate-800 dark:text-slate-200">{m.usuario.nombre}</p>
-                    <p className="text-[10px] text-slate-400">{m.usuario.correo}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="text-xs font-semibold px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400">
-                      {m.especialidad || 'General'}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                      m.estado === 'Disponible' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30'
-                    }`}>
-                      {m.estado}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => openEditModal(m)} className="p-1.5 text-slate-400 hover:text-amber-600"><Edit2 className="h-4 w-4" /></button>
-                      <button onClick={() => handleDelete(m.id_mecanico)} className="p-1.5 text-slate-400 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
-                    </div>
-                  </td>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-slate-400">Cargando...</td>
                 </tr>
-              ))}
+              ) : filteredMecanicos.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center text-slate-400">No se encontraron mecánicos.</td>
+                </tr>
+              ) : (
+                filteredMecanicos.map(m => (
+                  <tr key={m.id_mecanico} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold">
+                          {m.usuario.nombre[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800">{m.usuario.nombre}</p>
+                          <p className="text-xs text-slate-500">{m.usuario.correo}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-medium text-slate-700">{m.especialidad || 'General'}</span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                        m.estado === 'Disponible' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${m.estado === 'Disponible' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                        {m.estado}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => openEditModal(m)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => handleDelete(m.id_mecanico)} className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-      )}
+      </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black">{modalMode === 'create' ? 'Asignar Rol de Mecánico' : 'Editar Mecánico'}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400"><X /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-xl font-black text-slate-800">{modalMode === 'create' ? 'Asignar Rol de Mecánico' : 'Editar Mecánico'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Seleccionar Usuario</label>
-                <select disabled={modalMode === 'edit'} value={idUsuario} onChange={e => setIdUsuario(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
-                   {usuarios.filter(u => modalMode === 'edit' || !mecanicos.some(m => m.id_usuario === u.id_usuario)).map(u => (
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {formError && (
+                <div className="p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {formError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Seleccionar Usuario</label>
+                  <select
+                    disabled={modalMode === 'edit'}
+                    value={idUsuario}
+                    onChange={e => setIdUsuario(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                  >
+                    {usuarios.filter(u => modalMode === 'edit' || !mecanicos.some(m => m.id_usuario === u.id_usuario)).map(u => (
                       <option key={u.id_usuario} value={u.id_usuario}>{u.nombre}</option>
-                   ))}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Especialidad</label>
-                <input value={especialidad} onChange={e => setEspecialidad(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm" placeholder="Ej: Motores, Frenos, Suspensión..." />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Estado de Disponibilidad</label>
-                <select value={estado} onChange={e => setEstado(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
-                  <option value="Disponible">Disponible</option>
-                  <option value="Ocupado">Ocupado</option>
-                  <option value="Inactivo">Inactivo</option>
-                </select>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Especialidad</label>
+                  <input
+                    value={especialidad}
+                    onChange={e => setEspecialidad(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                    placeholder="Ej: Motores, Frenos..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Estado</label>
+                  <select
+                    value={estado}
+                    onChange={e => setEstado(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                  >
+                    <option value="Disponible">Disponible</option>
+                    <option value="Ocupado">Ocupado</option>
+                    <option value="Inactivo">Inactivo</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-400">Cancelar</button>
-                <button type="submit" disabled={formSubmitting} className="px-4 py-2 rounded-xl bg-amber-600 text-white font-bold text-sm disabled:opacity-50 transition-colors">
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={formSubmitting}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all shadow-lg shadow-orange-500/20 active:scale-95 flex items-center justify-center gap-2"
+                >
                   {formSubmitting ? <Loader2 className="animate-spin h-4 w-4" /> : (modalMode === 'create' ? 'Guardar' : 'Actualizar')}
                 </button>
               </div>
