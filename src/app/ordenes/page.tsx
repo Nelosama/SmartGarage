@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { 
   Plus, 
   Search, 
@@ -89,17 +89,12 @@ export default function OrdenesPage() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  // Fetch orders, vehicles, mechanics, and states
-  const fetchData = async (query = '') => {
+  // Fetch only order data
+  const fetchOrders = async (query = '') => {
     try {
       setLoading(true)
       const ordURL = `/api/ordenes${query ? `?q=${encodeURIComponent(query)}` : ''}`
-      const [ordRes, vehRes, mecRes, estRes] = await Promise.all([
-        fetch(ordURL),
-        fetch('/api/vehiculos'),
-        fetch('/api/mecanicos'),
-        fetch('/api/estados_orden')
-      ])
+      const ordRes = await fetch(ordURL)
 
       if (!ordRes.ok) {
          const errData = await ordRes.json()
@@ -107,9 +102,6 @@ export default function OrdenesPage() {
       }
 
       setOrdenes(await ordRes.json())
-      setVehiculos(await vehRes.json())
-      setMecanicos(await mecRes.json())
-      setEstados(await estRes.json())
       setError(null)
     } catch (err: any) {
       console.error(err)
@@ -119,14 +111,43 @@ export default function OrdenesPage() {
     }
   }
 
+  // Fetch metadata once on mount
+  const fetchMetadata = async () => {
+    try {
+      const [vehRes, mecRes, estRes] = await Promise.all([
+        fetch('/api/vehiculos'),
+        fetch('/api/mecanicos'),
+        fetch('/api/estados_orden')
+      ])
+
+      if (!vehRes.ok || !mecRes.ok || !estRes.ok) {
+        throw new Error('Error al cargar metadatos')
+      }
+
+      setVehiculos(await vehRes.json())
+      setMecanicos(await mecRes.json())
+      setEstados(await estRes.json())
+    } catch (err: any) {
+      console.error('Metadata fetch error:', err)
+    }
+  }
+
   useEffect(() => {
-    fetchData()
+    fetchMetadata()
+    fetchOrders() // Immediate fetch on mount
   }, [])
 
+  // Debounced search
+  useEffect(() => {
+    if (search === '') return // Skip if empty as we already fetch on mount or if user clears search
+    const timer = setTimeout(() => {
+      fetchOrders(search)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setSearch(val)
-    fetchData(val)
+    setSearch(e.target.value)
   }
 
   const openCreateModal = () => {
@@ -203,7 +224,7 @@ export default function OrdenesPage() {
       }
 
       setIsModalOpen(false)
-      fetchData(search)
+      fetchOrders(search)
     } catch (err: any) {
       console.error(err)
       setFormError(err.message)
@@ -217,16 +238,18 @@ export default function OrdenesPage() {
     try {
       const res = await fetch(`/api/ordenes/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Error al eliminar')
-      fetchData(search)
+      fetchOrders(search)
     } catch (err: any) {
       alert(err.message)
     }
   }
 
-  const filteredOrdenes = ordenes.filter(o => {
-    if (activeTab === 'todos') return true
-    return o.estado_actual.nombre_estado === activeTab
-  })
+  const filteredOrdenes = useMemo(() => {
+    return ordenes.filter(o => {
+      if (activeTab === 'todos') return true
+      return o.estado_actual.nombre_estado === activeTab
+    })
+  }, [ordenes, activeTab])
 
   return (
     <div className="space-y-6">

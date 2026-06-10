@@ -59,16 +59,6 @@ export async function GET(request: Request) {
           },
         },
         estado_actual: true,
-        orden_servicios: {
-          include: {
-            servicio: true
-          }
-        },
-        orden_repuestos: {
-          include: {
-            repuesto: true
-          }
-        }
       },
       orderBy: { fecha_ingreso: 'desc' },
     })
