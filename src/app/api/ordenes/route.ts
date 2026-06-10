@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: Request) {
   try {
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
     const query = searchParams.get('q') || ''
     const estadoIdParam = searchParams.get('estadoId')
 
-    const whereClause: any = {}
+    const whereClause: Prisma.OrdenTrabajoWhereInput = {}
 
     if (vehiculoIdParam) {
       const id_vehiculo = parseInt(vehiculoIdParam, 10)
@@ -64,11 +65,12 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json(ordenes)
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('API Error /api/ordenes:', error)
     return NextResponse.json({
       error: 'Error al obtener las órdenes',
-      details: error.message
+      details: message
     }, { status: 500 })
   }
 }
@@ -117,11 +119,12 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(orden, { status: 201 })
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('API Error /api/ordenes POST:', error)
     return NextResponse.json({
       error: 'Error al crear la orden',
-      details: error.message
+      details: message
     }, { status: 500 })
   }
 }

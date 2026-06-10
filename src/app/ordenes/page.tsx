@@ -35,6 +35,19 @@ interface Vehiculo {
   }
 }
 
+interface Mecanico {
+  id_mecanico: number
+  especialidad: string
+  usuario: {
+    nombre: string
+  }
+}
+
+interface Estado {
+  id_estado: number
+  nombre_estado: string
+}
+
 interface Orden {
   id_orden: number
   id_cliente: number
@@ -49,22 +62,15 @@ interface Orden {
   prioridad: string
   observaciones?: string
   vehiculo: Vehiculo
-  estado_actual: {
-    id_estado: number
-    nombre_estado: string
-  }
-  mecanico?: {
-    usuario: {
-      nombre: string
-    }
-  }
+  estado_actual: Estado
+  mecanico?: Mecanico
 }
 
 export default function OrdenesPage() {
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
-  const [mecanicos, setMecanicos] = useState<any[]>([])
-  const [estados, setEstados] = useState<any[]>([])
+  const [mecanicos, setMecanicos] = useState<Mecanico[]>([])
+  const [estados, setEstados] = useState<Estado[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'todos' | 'Pendiente' | 'En progreso' | 'Completado'>('todos')
@@ -90,7 +96,7 @@ export default function OrdenesPage() {
   const [formError, setFormError] = useState<string | null>(null)
 
   // Fetch only order data
-  const fetchOrders = async (query = '') => {
+  const fetchOrders = React.useCallback(async (query = '') => {
     try {
       setLoading(true)
       const ordURL = `/api/ordenes${query ? `?q=${encodeURIComponent(query)}` : ''}`
@@ -103,16 +109,17 @@ export default function OrdenesPage() {
 
       setOrdenes(await ordRes.json())
       setError(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       console.error(err)
-      setError(`Error: ${err.message}`)
+      setError(`Error: ${message}`)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Fetch metadata once on mount
-  const fetchMetadata = async () => {
+  const fetchMetadata = React.useCallback(async () => {
     try {
       const [vehRes, mecRes, estRes] = await Promise.all([
         fetch('/api/vehiculos'),
@@ -127,24 +134,31 @@ export default function OrdenesPage() {
       setVehiculos(await vehRes.json())
       setMecanicos(await mecRes.json())
       setEstados(await estRes.json())
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Metadata fetch error:', err)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    fetchMetadata()
-    fetchOrders() // Immediate fetch on mount
-  }, [])
+    let mounted = true;
+    (async () => {
+      if (mounted) {
+        await fetchMetadata()
+        await fetchOrders() // Immediate fetch on mount
+      }
+    })();
+    return () => {
+      mounted = false
+    }
+  }, [fetchMetadata, fetchOrders])
 
   // Debounced search
   useEffect(() => {
-    if (search === '') return // Skip if empty as we already fetch on mount or if user clears search
     const timer = setTimeout(() => {
-      fetchOrders(search)
+      void fetchOrders(search)
     }, 300)
     return () => clearTimeout(timer)
-  }, [search])
+  }, [search, fetchOrders])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
@@ -224,10 +238,11 @@ export default function OrdenesPage() {
       }
 
       setIsModalOpen(false)
-      fetchOrders(search)
-    } catch (err: any) {
+      void fetchOrders(search)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       console.error(err)
-      setFormError(err.message)
+      setFormError(message)
     } finally {
       setFormSubmitting(false)
     }
@@ -238,9 +253,10 @@ export default function OrdenesPage() {
     try {
       const res = await fetch(`/api/ordenes/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Error al eliminar')
-      fetchOrders(search)
-    } catch (err: any) {
-      alert(err.message)
+      void fetchOrders(search)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      alert(message)
     }
   }
 

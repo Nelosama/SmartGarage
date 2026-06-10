@@ -66,7 +66,7 @@ export default function VehiculosPage() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  const fetchData = async (query = '') => {
+  const fetchData = React.useCallback(async (query = '') => {
     try {
       setLoading(true)
       const vehURL = `/api/vehiculos${query ? `?q=${encodeURIComponent(query)}` : ''}`
@@ -83,17 +83,26 @@ export default function VehiculosPage() {
       setVehiculos(vehData)
       setClientes(cliData)
       setError(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       console.error(err)
-      setError(`Error: ${err.message}`)
+      setError(`Error: ${message}`)
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    let mounted = true;
+    (async () => {
+      if (mounted) {
+        await fetchData()
+      }
+    })();
+    return () => {
+      mounted = false
+    }
+  }, [fetchData])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
@@ -170,10 +179,11 @@ export default function VehiculosPage() {
       }
 
       setIsModalOpen(false)
-      fetchData(search)
-    } catch (err: any) {
+      void fetchData(search)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       console.error(err)
-      setFormError(err.message)
+      setFormError(message)
     } finally {
       setFormSubmitting(false)
     }
@@ -192,10 +202,11 @@ export default function VehiculosPage() {
         throw new Error(data.error || 'Error al eliminar el vehículo')
       }
 
-      fetchData(search)
-    } catch (err: any) {
+      void fetchData(search)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       console.error(err)
-      alert(err.message)
+      alert(message)
     }
   }
 
