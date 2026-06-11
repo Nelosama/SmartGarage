@@ -129,7 +129,6 @@ export default function ClientesPage() {
 
       const url = modalMode === 'create' ? '/api/clientes' : `/api/clientes/${selectedCliente?.id}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -179,8 +178,8 @@ export default function ClientesPage() {
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100">Directorio de Clientes</h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+          <h2 className="text-2xl font-black tracking-tight text-slate-800">Directorio de Clientes</h2>
+          <p className="text-xs text-slate-400 mt-0.5">
             Administración, registro y detalles de contacto de los clientes
           </p>
         </div>
@@ -196,7 +195,7 @@ export default function ClientesPage() {
       {/* Search and warnings */}
       <div className="flex flex-col gap-4">
         {error && (
-          <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-200/35">
+          <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-red-50 text-red-600 border border-red-200/35">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -209,13 +208,13 @@ export default function ClientesPage() {
             placeholder="Buscar por nombre, email o teléfono..."
             value={search}
             onChange={handleSearchChange}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/25 text-sm transition-all shadow-sm"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/25 text-sm transition-all shadow-sm"
           />
         </div>
       </div>
 
       {/* Clients Table */}
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
@@ -230,23 +229,23 @@ export default function ClientesPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
                   <th className="py-3 px-6">Cliente / Identidad</th>
                   <th className="py-3 px-6">Contacto</th>
                   <th className="py-3 px-6">Dirección</th>
                   <th className="py-3 px-6 text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {clientes.map((cliente) => (
-                  <tr key={cliente.id} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10 transition-colors">
+                  <tr key={cliente.id} className="hover:bg-slate-50/30 transition-colors">
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-slate-800 flex items-center justify-center text-blue-600 font-bold text-xs">
+                        <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs">
                           {cliente.nombre.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{cliente.nombre}</p>
+                          <p className="font-bold text-slate-800">{cliente.nombre}</p>
                           {cliente.identidad && (
                             <p className="text-[10px] text-slate-400 flex items-center gap-1">
                               <CreditCard className="h-2.5 w-2.5" /> {cliente.identidad}
@@ -256,15 +255,15 @@ export default function ClientesPage() {
                       </div>
                     </td>
                     <td className="py-4 px-6 space-y-1 text-xs">
-                      <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center gap-2 text-slate-600">
                         <Mail className="h-3 w-3" /> {cliente.email}
                       </div>
-                      <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                      <div className="flex items-center gap-2 text-slate-600">
                         <Phone className="h-3 w-3" /> {cliente.telefono}
                       </div>
                     </td>
                     <td className="py-4 px-6 max-w-xs">
-                       <p className="text-xs text-slate-600 dark:text-slate-400 truncate">{cliente.direccion}</p>
+                       <p className="text-xs text-slate-600 truncate">{cliente.direccion}</p>
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-1.5">
@@ -297,14 +296,14 @@ export default function ClientesPage() {
       {/* CREATE/EDIT MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-6">
+          <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl p-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
+              <h3 className="text-lg font-black text-slate-800">
                 {modalMode === 'create' ? 'Registrar Nuevo Cliente' : 'Editar Datos de Cliente'}
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-100"
                 aria-label="Cerrar modal"
                 title="Cerrar"
               >
@@ -327,7 +326,7 @@ export default function ClientesPage() {
                   required
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                 />
               </div>
 
@@ -340,7 +339,7 @@ export default function ClientesPage() {
                     required
                     value={telefono}
                     onChange={(e) => setTelefono(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -351,7 +350,7 @@ export default function ClientesPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                   />
                 </div>
               </div>
@@ -363,7 +362,7 @@ export default function ClientesPage() {
                   type="text"
                   value={identidad}
                   onChange={(e) => setIdentidad(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                 />
               </div>
 
@@ -375,7 +374,7 @@ export default function ClientesPage() {
                   rows={2}
                   value={direccion}
                   onChange={(e) => setDireccion(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                 />
               </div>
 
@@ -383,7 +382,7 @@ export default function ClientesPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm font-semibold"
+                  className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"
                 >
                   Cancelar
                 </button>

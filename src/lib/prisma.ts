@@ -6,7 +6,6 @@ const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
 function createPrismaClient() {
   const connectionString = process.env.DATABASE_URL
-
   if (!connectionString) {
     console.error('DATABASE_URL no está definida en las variables de entorno.')
   }

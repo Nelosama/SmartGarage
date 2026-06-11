@@ -16,7 +16,6 @@ import {
   AlertCircle,
   ArrowLeft
 } from 'lucide-react'
-import Link from 'next/link'
 
 interface Vehiculo {
   placa: string
@@ -65,12 +64,10 @@ function ServiciosRealizadosContent() {
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedServicio, setSelectedServicio] = useState<ServicioRealizado | null>(null)
 
-  // Form states
   const [idServicio, setIdServicio] = useState<string>('')
   const [ordenId, setOrdenId] = useState<string>('')
   const [cantidad, setCantidad] = useState<number>(1)
@@ -80,26 +77,21 @@ function ServiciosRealizadosContent() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  // Fetch performed services, orders and service catalog
   const fetchData = async (query = '') => {
     try {
       setLoading(true)
       const servURL = `/api/servicios-realizados${filterOrdenId ? `?ordenId=${filterOrdenId}` : ''}${query ? `${filterOrdenId ? '&' : '?'}q=${encodeURIComponent(query)}` : ''}`
-      
       const [servRes, ordRes, catRes] = await Promise.all([
         fetch(servURL),
         fetch('/api/ordenes'),
         fetch('/api/servicios')
       ])
-
       if (!servRes.ok) throw new Error('Error al conectar con el servidor')
-
       setServicios(await servRes.json())
       setOrdenes(await ordRes.json())
       setCatalogoServicios(await catRes.json())
       setError(null)
     } catch (err: any) {
-      console.error(err)
       setError(`Error: ${err.message}`)
     } finally {
       setLoading(false)
@@ -110,12 +102,6 @@ function ServiciosRealizadosContent() {
     fetchData()
   }, [filterOrdenId])
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setSearch(val)
-    fetchData(val)
-  }
-
   const openCreateModal = () => {
     setModalMode('create')
     setSelectedServicio(null)
@@ -124,7 +110,6 @@ function ServiciosRealizadosContent() {
     setPrecioUnitario(catalogoServicios[0]?.precio_base || 0)
     setObservaciones('')
     setOrdenId(filterOrdenId || ordenes[0]?.id_orden.toString() || '')
-    setFormError(null)
     setIsModalOpen(true)
   }
 
@@ -136,234 +121,139 @@ function ServiciosRealizadosContent() {
     setPrecioUnitario(srv.precio_unitario)
     setObservaciones(srv.observaciones || '')
     setOrdenId(srv.id_orden.toString())
-    setFormError(null)
     setIsModalOpen(true)
-  }
-
-  const handleCatalogServiceChange = (id: string) => {
-     setIdServicio(id)
-     const srv = catalogoServicios.find(s => s.id_servicio === parseInt(id, 10))
-     if (srv) setPrecioUnitario(srv.precio_base)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!idServicio || !ordenId) {
-      setFormError('Debe seleccionar un servicio y una orden')
-      return
-    }
-
     try {
       setFormSubmitting(true)
-      setFormError(null)
-
       const url = modalMode === 'create' ? '/api/servicios-realizados' : `/api/servicios-realizados/${selectedServicio?.id_orden_servicio}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id_servicio: parseInt(idServicio, 10),
-          id_orden: parseInt(ordenId, 10),
+          id_servicio: parseInt(idServicio),
+          id_orden: parseInt(ordenId),
           cantidad: Number(cantidad),
           precio_unitario: Number(precioUnitario),
           observaciones
         })
       })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.details || data.error || 'Ocurrió un error')
-      }
-
+      if (!res.ok) throw new Error('Error')
       setIsModalOpen(false)
       fetchData(search)
     } catch (err: any) {
-      console.error(err)
       setFormError(err.message)
     } finally {
       setFormSubmitting(false)
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro?')) return
-    try {
-      const res = await fetch(`/api/servicios-realizados/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Error al eliminar')
-      fetchData(search)
-    } catch (err: any) {
-      alert(err.message)
-    }
-  }
-
-  const clearFilter = () => {
-    router.push('/servicios-realizados')
-  }
-
   const totalCosto = servicios.reduce((sum, s) => sum + Number(s.subtotal), 0)
 
   return (
-    <div className="space-y-6">
-      {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            {filterOrdenId && (
-              <button onClick={clearFilter} className="p-1 rounded-lg text-slate-500 hover:bg-slate-100"><ArrowLeft className="h-4 w-4" /></button>
-            )}
-            <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100">Servicios Aplicados</h2>
-          </div>
-          <p className="text-xs text-slate-400 mt-0.5">Control de trabajos y costos por orden</p>
+          <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+            <ClipboardList className="h-8 w-8 text-orange-600" />
+            Servicios Realizados
+          </h1>
+          <p className="text-slate-500 text-sm">Registro de trabajos y facturación parcial.</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg transition-all"
-        >
-          <Plus className="h-4.5 w-4.5" /> Registrar Trabajo
+        <button onClick={openCreateModal} className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20 active:scale-95 flex items-center gap-2">
+          <Plus className="h-4 w-4" /> Registrar Trabajo
         </button>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 max-w-2xl">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><DollarSign className="h-5 w-5" /></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600"><DollarSign className="h-6 w-6" /></div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase">Costo Total</p>
-            <p className="text-xl font-extrabold text-slate-800 dark:text-slate-100">${totalCosto.toFixed(2)}</p>
-          </div>
-        </div>
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-4 shadow-sm">
-          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"><ClipboardList className="h-5 w-5" /></div>
-          <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase">Trabajos Realizados</p>
-            <p className="text-xl font-extrabold text-slate-800 dark:text-slate-100">{servicios.length}</p>
+            <p className="text-xs font-bold text-slate-400 uppercase">Costo Total Acumulado</p>
+            <p className="text-2xl font-black text-slate-800">L {totalCosto.toFixed(2)}</p>
           </div>
         </div>
       </div>
 
-      {error && (
-        <div className="p-3 text-xs rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4" /> {error}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
-          <p className="text-xs text-slate-400">Cargando...</p>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-6">Orden / Vehículo</th>
-                  <th className="py-3 px-6">Servicio</th>
-                  <th className="py-3 px-6">Subtotal</th>
-                  <th className="py-3 px-6 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {servicios.map((srv) => (
-                  <tr key={srv.id_orden_servicio} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10 transition-colors">
-                    <td className="py-4 px-6">
-                      <div>
-                        <p className="font-bold text-slate-800 dark:text-slate-200">Orden #{srv.id_orden}</p>
-                        <p className="text-[10px] text-indigo-500 font-semibold">{srv.orden.vehiculo.placa} ({srv.orden.vehiculo.cliente.usuario.nombre})</p>
-                      </div>
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                <th className="px-6 py-4">Orden / Vehículo</th>
+                <th className="px-6 py-4">Servicio</th>
+                <th className="px-6 py-4">Subtotal</th>
+                <th className="px-6 py-4 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400">Cargando...</td></tr>
+              ) : (
+                servicios.map(srv => (
+                  <tr key={srv.id_orden_servicio} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <p className="font-bold text-slate-800">Orden #{srv.id_orden}</p>
+                      <p className="text-xs text-slate-500">{srv.orden.vehiculo.placa} ({srv.orden.vehiculo.cliente.usuario.nombre})</p>
                     </td>
-                    <td className="py-4 px-6">
-                      <p className="font-bold text-slate-700 dark:text-slate-200">{srv.servicio.nombre_servicio}</p>
-                      <p className="text-[10px] text-slate-400 italic line-clamp-1">{srv.observaciones}</p>
+                    <td className="px-6 py-4">
+                      <p className="font-bold text-slate-800">{srv.servicio.nombre_servicio}</p>
+                      <p className="text-xs text-slate-400">{srv.observaciones}</p>
                     </td>
-                    <td className="py-4 px-6">
-                      <span className="font-bold text-emerald-500">${Number(srv.subtotal).toFixed(2)}</span>
-                      <p className="text-[9px] text-slate-400">{srv.cantidad} x ${Number(srv.precio_unitario).toFixed(2)}</p>
+                    <td className="px-6 py-4">
+                      <p className="font-black text-orange-600">L {Number(srv.subtotal).toFixed(2)}</p>
+                      <p className="text-[10px] text-slate-400">{srv.cantidad} x L {Number(srv.precio_unitario).toFixed(2)}</p>
                     </td>
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button onClick={() => openEditModal(srv)} className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 transition-all cursor-pointer"><Edit2 className="h-4 w-4" /></button>
-                        <button onClick={() => handleDelete(srv.id_orden_servicio)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 transition-all cursor-pointer"><Trash2 className="h-4 w-4" /></button>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => openEditModal(srv)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"><Edit2 className="h-4 w-4" /></button>
+                        <button className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
 
-      {/* CREATE/EDIT MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
-                {modalMode === 'create' ? 'Registrar Trabajo Realizado' : 'Editar Detalle de Servicio'}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-xl font-black text-slate-800">Registrar Servicio</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="h-5 w-5 text-slate-400" /></button>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Orden de Trabajo</label>
-                <select value={ordenId} onChange={(e) => setOrdenId(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
-                   {ordenes.map(o => (
-                      <option key={o.id_orden} value={o.id_orden}>Orden #{o.id_orden} - {o.vehiculo.placa} ({o.vehiculo.cliente.usuario.nombre})</option>
-                   ))}
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Orden</label>
+                <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={ordenId} onChange={e => setOrdenId(e.target.value)}>
+                  {ordenes.map(o => <option key={o.id_orden} value={o.id_orden}>Orden #{o.id_orden} - {o.vehiculo.placa}</option>)}
                 </select>
               </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Servicio Realizado</label>
-                <select value={idServicio} onChange={(e) => handleCatalogServiceChange(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm">
-                   {catalogoServicios.map(s => (
-                      <option key={s.id_servicio} value={s.id_servicio}>{s.nombre_servicio} (Base: ${Number(s.precio_base).toFixed(2)})</option>
-                   ))}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Servicio</label>
+                <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={idServicio} onChange={e => setIdServicio(e.target.value)}>
+                  {catalogoServicios.map(s => <option key={s.id_servicio} value={s.id_servicio}>{s.nombre_servicio}</option>)}
                 </select>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Cantidad</label>
-                  <input type="number" required min="1" value={cantidad} onChange={(e) => setCantidad(parseInt(e.target.value, 10))} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"/>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cantidad</label>
+                  <input type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={cantidad} onChange={e => setCantidad(Number(e.target.value))} />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase">Precio Unitario ($)</label>
-                  <input type="number" required step="0.01" value={precioUnitario} onChange={(e) => setPrecioUnitario(parseFloat(e.target.value))} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"/>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Precio</label>
+                  <input type="number" step="0.01" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={precioUnitario} onChange={e => setPrecioUnitario(Number(e.target.value))} />
                 </div>
               </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Observaciones Específicas</label>
-                <textarea rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm resize-none" />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-semibold transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={formSubmitting}
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm disabled:opacity-50 transition-colors shadow-lg shadow-emerald-500/20"
-                >
-                  {formSubmitting ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Procesando...</span>
-                    </div>
-                  ) : (
-                    modalMode === 'create' ? 'Guardar' : 'Actualizar'
-                  )}
-                </button>
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Cancelar</button>
+                <button type="submit" disabled={formSubmitting} className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20">{formSubmitting ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </form>
           </div>
@@ -375,7 +265,7 @@ function ServiciosRealizadosContent() {
 
 export default function ServiciosRealizadosPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center">Cargando...</div>}>
+    <Suspense fallback={<div className="p-20 text-center text-slate-400">Cargando aplicación...</div>}>
       <ServiciosRealizadosContent />
     </Suspense>
   )

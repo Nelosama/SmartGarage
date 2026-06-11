@@ -1,9 +1,28 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { Prisma } from '@prisma/client'
 
 export async function GET() {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const user = session.user as any
+    const whereClause: Prisma.AlertaMantenimientoWhereInput = {}
+
+    if (user.id_rol === 4) { // Cliente
+      const cliente = await prisma.cliente.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
+      if (cliente) {
+        whereClause.vehiculo = { id_cliente: cliente.id_cliente }
+      } else {
+        return NextResponse.json([])
+      }
+    }
+
     const alertas = await prisma.alertaMantenimiento.findMany({
+      where: whereClause,
       include: { vehiculo: true, servicio: true },
     })
     return NextResponse.json(alertas)

@@ -9,12 +9,7 @@ import {
   Loader2, 
   Car,
   User,
-  Calendar,
-  Tag,
-  X,
-  AlertCircle,
-  Fuel,
-  Info
+  X
 } from 'lucide-react'
 
 interface Cliente {
@@ -47,12 +42,10 @@ export default function VehiculosPage() {
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
   
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedVehiculo, setSelectedVehiculo] = useState<Vehiculo | null>(null)
   
-  // Form states
   const [placa, setPlaca] = useState('')
   const [marca, setMarca] = useState('')
   const [modelo, setModelo] = useState('')
@@ -77,16 +70,11 @@ export default function VehiculosPage() {
 
       if (!vehRes.ok || !cliRes.ok) throw new Error('Error al conectar con el servidor')
 
-      const vehData = await vehRes.json()
-      const cliData = await cliRes.json()
-
-      setVehiculos(vehData)
-      setClientes(cliData)
+      setVehiculos(await vehRes.json())
+      setClientes(await cliRes.json())
       setError(null)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      console.error(err)
-      setError(`Error: ${message}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
       setLoading(false)
     }
@@ -98,10 +86,8 @@ export default function VehiculosPage() {
       if (mounted) {
         await fetchData()
       }
-    })();
-    return () => {
-      mounted = false
-    }
+    })()
+    return () => { mounted = false }
   }, [fetchData])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,18 +130,10 @@ export default function VehiculosPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!placa || !marca || !modelo || !clienteId) {
-      setFormError('Placa, Marca, Modelo y Cliente son obligatorios')
-      return
-    }
-
     try {
       setFormSubmitting(true)
-      setFormError(null)
-
       const url = modalMode === 'create' ? '/api/vehiculos' : `/api/vehiculos/${selectedVehiculo?.id_vehiculo}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -163,304 +141,147 @@ export default function VehiculosPage() {
           placa,
           marca,
           modelo,
-          anio: parseInt(anio.toString(), 10),
-          clienteId: parseInt(clienteId, 10),
+          anio: parseInt(anio.toString()),
+          clienteId: parseInt(clienteId),
           color,
           vin,
           tipo_combustible: tipoCombustible,
-          kilometraje_actual: parseInt(kilometraje.toString(), 10)
+          kilometraje_actual: parseInt(kilometraje.toString())
         })
       })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.details || data.error || 'Ocurrió un error al guardar el vehículo')
-      }
-
+      if (!res.ok) throw new Error('Error al guardar')
       setIsModalOpen(false)
-      void fetchData(search)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      console.error(err)
-      setFormError(message)
+      fetchData(search)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Error al guardar')
     } finally {
       setFormSubmitting(false)
     }
   }
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar este vehículo? Se eliminarán todas las órdenes asociadas.')) return
-
+    if (!confirm('¿Estás seguro?')) return
     try {
-      const res = await fetch(`/api/vehiculos/${id}`, {
-        method: 'DELETE'
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Error al eliminar el vehículo')
-      }
-
-      void fetchData(search)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      console.error(err)
-      alert(message)
+      const res = await fetch(`/api/vehiculos/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Error al eliminar')
+      fetchData(search)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al eliminar')
     }
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-slate-800 dark:text-slate-100">Registro de Vehículos</h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-            Gestión de vehículos de clientes en el taller mecánico
-          </p>
+          <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+            <Car className="h-8 w-8 text-orange-600" />
+            Flota de Vehículos
+          </h1>
+          <p className="text-slate-500 text-sm">Registro y gestión de unidades de clientes.</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
-        >
-          <Car className="h-4 w-4" />
-          Registrar Vehículo
+        <button onClick={openCreateModal} className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center gap-2">
+          <Plus className="h-4 w-4" /> Registrar Vehículo
         </button>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {error && (
-          <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border border-red-200/35">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar por placa, marca o modelo..."
+              className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+              value={search}
+              onChange={handleSearchChange}
+            />
           </div>
-        )}
-
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por placa, marca o modelo..."
-            value={search}
-            onChange={handleSearchChange}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 text-sm transition-all shadow-sm"
-          />
         </div>
-      </div>
 
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
-            <p className="text-xs text-slate-400">Cargando vehículos...</p>
-          </div>
-        ) : vehiculos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-4 text-slate-500">
-            <Car className="h-10 w-10 mb-4 opacity-20" />
-            <h4 className="font-bold">No se encontraron vehículos</h4>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-6">Placa</th>
-                  <th className="py-3 px-6">Vehículo</th>
-                  <th className="py-3 px-6">Cliente</th>
-                  <th className="py-3 px-6">Info Adicional</th>
-                  <th className="py-3 px-6 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {vehiculos.map((vehiculo) => (
-                  <tr key={vehiculo.id_vehiculo} className="hover:bg-slate-50/30 dark:hover:bg-slate-800/10 transition-colors">
-                    <td className="py-4 px-6 font-mono font-bold text-slate-800 dark:text-slate-200">
-                      <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg text-xs">
-                        {vehiculo.placa}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-xs">
-                      <div>
-                        <p className="font-bold text-slate-800 dark:text-slate-200">{vehiculo.marca} {vehiculo.modelo}</p>
-                        <p className="text-slate-400 mt-0.5">Año: {vehiculo.anio || 'N/A'}</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                <th className="px-6 py-4">Vehículo</th>
+                <th className="px-6 py-4">Propietario</th>
+                <th className="px-6 py-4 text-center">Kilometraje</th>
+                <th className="px-6 py-4 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400">Cargando...</td></tr>
+              ) : (
+                vehiculos.map(v => (
+                  <tr key={v.id_vehiculo} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 font-bold text-xs">
+                          {v.placa}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800">{v.marca} {v.modelo}</p>
+                          <p className="text-xs text-slate-500">Año {v.anio} • {v.color || 'N/A'}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="py-4 px-6 text-xs">
-                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                        <User className="h-3.5 w-3.5 text-slate-400" />
-                        <span>{vehiculo.cliente?.usuario?.nombre || 'Sin propietario'}</span>
-                      </div>
+                    <td className="px-6 py-4">
+                      <span className="flex items-center gap-1.5 text-slate-600"><User className="h-3.5 w-3.5" /> {v.cliente?.usuario?.nombre}</span>
                     </td>
-                    <td className="py-4 px-6 text-[10px] space-y-1">
-                      {vehiculo.color && <div className="text-slate-500 capitalize">Color: {vehiculo.color}</div>}
-                      {vehiculo.tipo_combustible && <div className="flex items-center gap-1 text-slate-500"><Fuel className="h-2.5 w-2.5"/> {vehiculo.tipo_combustible}</div>}
-                      <div className="font-semibold text-indigo-500">{vehiculo.kilometraje_actual.toLocaleString()} KM</div>
+                    <td className="px-6 py-4 text-center font-mono font-bold text-slate-700">
+                      {v.kilometraje_actual.toLocaleString()} KM
                     </td>
-                    <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => openEditModal(vehiculo)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(vehiculo.id_vehiculo)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 transition-all cursor-pointer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => openEditModal(v)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"><Edit2 className="h-4 w-4" /></button>
+                        <button onClick={() => handleDelete(v.id_vehiculo)} className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="h-4 w-4" /></button>
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">
-                {modalMode === 'create' ? 'Registrar Nuevo Vehículo' : 'Editar Datos de Vehículo'}
-              </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="h-5 w-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-scale-in">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-xl font-black text-slate-800">{modalMode === 'create' ? 'Nuevo Vehículo' : 'Editar Vehículo'}</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="h-5 w-5 text-slate-400" /></button>
             </div>
-
-            {formError && (
-              <div className="p-3 text-xs rounded-xl bg-red-50 text-red-600 border border-red-200 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4" /> {formError}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Número de Placa</label>
-                  <input
-                    type="text"
-                    required
-                    value={placa}
-                    onChange={(e) => setPlaca(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
-                  />
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Placa</label>
+                  <input required className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={placa} onChange={e => setPlaca(e.target.value)} />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Año</label>
-                  <input
-                    type="number"
-                    value={anio}
-                    onChange={(e) => setAnio(parseInt(e.target.value, 10))}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none focus:ring-2"
-                  />
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Año</label>
+                  <input type="number" className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={anio} onChange={e => setAnio(parseInt(e.target.value))} />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Marca</label>
-                  <input
-                    type="text"
-                    required
-                    value={marca}
-                    onChange={(e) => setMarca(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none"
-                  />
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Marca</label>
+                  <input required className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={marca} onChange={e => setMarca(e.target.value)} />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Modelo</label>
-                  <input
-                    type="text"
-                    required
-                    value={modelo}
-                    onChange={(e) => setModelo(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm focus:outline-none"
-                  />
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Modelo</label>
+                  <input required className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={modelo} onChange={e => setModelo(e.target.value)} />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Color</label>
-                  <input
-                    type="text"
-                    value={color}
-                    onChange={(e) => setColor(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Combustible</label>
-                  <input
-                    type="text"
-                    placeholder="Ej. Gasolina, Diesel, Híbrido"
-                    value={tipoCombustible}
-                    onChange={(e) => setTipoCombustible(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Kilometraje Actual</label>
-                <input
-                  type="number"
-                  value={kilometraje}
-                  onChange={(e) => setKilometraje(parseInt(e.target.value, 10))}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Número de VIN</label>
-                <input
-                  type="text"
-                  value={vin}
-                  onChange={(e) => setVin(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm font-mono"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Propietario / Cliente</label>
-                {clientes.length === 0 ? (
-                  <div className="text-xs text-red-500 bg-red-50 p-2.5 rounded-xl">No hay clientes registrados</div>
-                ) : (
-                  <select
-                    value={clienteId}
-                    onChange={(e) => setClienteId(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-sm"
-                  >
-                    {clientes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre} (ID: #{c.id})
-                      </option>
-                    ))}
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Cliente</label>
+                  <select className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm" value={clienteId} onChange={e => setClienteId(e.target.value)}>
+                    {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
-                )}
+                </div>
               </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 sticky bottom-0 bg-white dark:bg-slate-900 border-t">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={formSubmitting || clientes.length === 0}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-sm shadow-lg shadow-indigo-500/20 disabled:opacity-50"
-                >
-                  {formSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {modalMode === 'create' ? 'Guardar Vehículo' : 'Actualizar Vehículo'}
-                </button>
+              <div className="flex gap-3 pt-4">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 text-sm font-semibold transition-all">Cancelar</button>
+                <button type="submit" disabled={formSubmitting} className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20">{formSubmitting ? 'Guardando...' : 'Guardar'}</button>
               </div>
             </form>
           </div>
