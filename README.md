@@ -40,6 +40,7 @@ DATABASE_URL="postgresql://postgres.mgxqbkfiqfmtydydhfgl:tu_password_aquí@aws-1
 Para iniciar el servidor de desarrollo, utiliza:
 
 ```bash
+npm install next-auth
 npm run dev --webpack
 ```
 
