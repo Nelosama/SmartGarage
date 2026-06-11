@@ -206,8 +206,12 @@ export default function OrdenesPage() {
 
   const filteredOrdenes = useMemo(() => {
     return ordenes.filter(o => {
+      const status = o.estado_actual.nombre_estado
       if (activeTab === 'todos') return true
-      return o.estado_actual.nombre_estado === activeTab
+      if (activeTab === 'Recibido') return ['Recibido', 'En espera'].includes(status)
+      if (activeTab === 'En reparación') return ['En diagnostico', 'En reparacion', 'Esperando repuestos', 'En prueba'].includes(status)
+      if (activeTab === 'Listo para entrega') return status === 'Listo para entrega'
+      return status === activeTab
     })
   }, [ordenes, activeTab])
 

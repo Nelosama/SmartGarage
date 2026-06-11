@@ -110,7 +110,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
             const Icon = item.icon
             const isActive = item.href === '/' 
               ? pathname === '/' 
-              : pathname.startsWith(item.href)
+              : (pathname === item.href || pathname.startsWith(item.href + '/'))
 
             return (
               <Link
@@ -175,10 +175,6 @@ export default function LayoutShell({ children }: LayoutShellProps) {
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 text-xs text-slate-500 font-semibold">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Lempiras (HNL)
-            </div>
           </div>
         </header>
 
