@@ -1,0 +1,34 @@
+
+> smart-garage@0.1.0 dev /app
+> next dev --webpack --webpack
+
+▲ Next.js 16.2.7 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+- Environments: .env
+✓ Ready in 1179ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+○ Compiling /login ...
+ GET /login 200 in 7.9s (next.js: 7.2s, application-code: 721ms)
+ GET /api/auth/session 200 in 4.0s (next.js: 3.9s, application-code: 48ms)
+ GET /login 200 in 372ms (next.js: 94ms, application-code: 278ms)
+ GET /api/auth/session 200 in 67ms (next.js: 30ms, application-code: 37ms)
+ GET /login 200 in 61ms (next.js: 4ms, application-code: 57ms)
+ GET /api/auth/session 200 in 35ms (next.js: 21ms, application-code: 14ms)
+ GET /api/auth/providers 200 in 45ms (next.js: 31ms, application-code: 14ms)
+ GET /api/auth/csrf 200 in 15ms (next.js: 3ms, application-code: 12ms)
+ POST /api/auth/callback/credentials 200 in 528ms (next.js: 3ms, application-code: 524ms)
+ GET /api/auth/session 200 in 29ms (next.js: 6ms, application-code: 22ms)
+ GET / 200 in 632ms (next.js: 4ms, proxy.ts: 22ms, application-code: 606ms)
+ GET / 200 in 3.0s (next.js: 1765ms, proxy.ts: 300ms, application-code: 939ms)
+ GET /vehiculos 200 in 1816ms (next.js: 1735ms, proxy.ts: 12ms, application-code: 69ms)
+○ Compiling /usuarios ...
+ GET /api/auth/csrf 200 in 2.9s (next.js: 2.8s, application-code: 118ms)
+ GET /usuarios 200 in 5.2s (next.js: 4.9s, proxy.ts: 131ms, application-code: 202ms)
+ POST /api/auth/signout 200 in 16ms (next.js: 2ms, application-code: 14ms)
+ GET /api/clientes 200 in 5.7s (next.js: 5.4s, proxy.ts: 29ms, application-code: 268ms)
+ GET /api/vehiculos 200 in 5.7s (next.js: 5.4s, proxy.ts: 27ms, application-code: 274ms)
+ GET /login 200 in 393ms (next.js: 34ms, application-code: 359ms)
+ GET /login?correo=carlos%40email.com&password=12345 200 in 163ms (next.js: 4ms, application-code: 159ms)
+ GET /api/auth/session 200 in 40ms (next.js: 31ms, application-code: 10ms)

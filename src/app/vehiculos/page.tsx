@@ -9,9 +9,7 @@ import {
   Loader2, 
   Car,
   User,
-  X,
-  AlertCircle,
-  Fuel
+  X
 } from 'lucide-react'
 
 interface Cliente {
@@ -75,15 +73,21 @@ export default function VehiculosPage() {
       setVehiculos(await vehRes.json())
       setClientes(await cliRes.json())
       setError(null)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchData()
+    let mounted = true;
+    (async () => {
+      if (mounted) {
+        await fetchData()
+      }
+    })()
+    return () => { mounted = false }
   }, [fetchData])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,8 +153,8 @@ export default function VehiculosPage() {
       if (!res.ok) throw new Error('Error al guardar')
       setIsModalOpen(false)
       fetchData(search)
-    } catch (err: any) {
-      setFormError(err.message)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Error al guardar')
     } finally {
       setFormSubmitting(false)
     }
@@ -162,8 +166,8 @@ export default function VehiculosPage() {
       const res = await fetch(`/api/vehiculos/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Error al eliminar')
       fetchData(search)
-    } catch (err: any) {
-      alert(err.message)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al eliminar')
     }
   }
 

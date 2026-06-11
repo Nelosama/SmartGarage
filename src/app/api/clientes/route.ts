@@ -1,13 +1,24 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const user = session.user as any
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q') || ''
 
     const whereClause: Prisma.ClienteWhereInput = {}
+
+    // Role-based filtering
+    if (user.id_rol === 4) { // Cliente
+      whereClause.id_usuario = parseInt(user.id_usuario)
+    }
 
     if (query) {
       whereClause.OR = [

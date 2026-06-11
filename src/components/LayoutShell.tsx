@@ -33,7 +33,8 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   const user = session?.user as any
 
   const allMenuItems = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: [1, 2, 3, 4] },
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: [1, 2, 3] },
+    { name: 'Mi Dashboard', href: '/mi-dashboard', icon: LayoutDashboard, roles: [4] },
     { name: 'Clientes', href: '/clientes', icon: Users, roles: [1, 2] },
     { name: 'Vehículos', href: '/vehiculos', icon: Car, roles: [1, 2, 4] },
     { name: 'Órdenes de Trabajo', href: '/ordenes', icon: Wrench, roles: [1, 2, 3, 4] },
@@ -81,7 +82,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
         }`}
       >
         <div className="flex h-16 items-center justify-between px-6 border-b border-slate-200">
-          <Link href="/" className="flex items-center gap-3 group" onClick={() => setSidebarOpen(false)}>
+          <Link href={user?.id_rol === 4 ? '/mi-dashboard' : '/'} className="flex items-center gap-3 group" onClick={() => setSidebarOpen(false)}>
             <div className="p-2.5 rounded-xl bg-orange-600 text-white shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform duration-200">
               <Wrench className="h-6 w-6" />
             </div>

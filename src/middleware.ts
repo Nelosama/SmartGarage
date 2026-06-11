@@ -17,7 +17,7 @@ export default withAuth(
       if (pathname === '/' || allowed.some(path => pathname.startsWith(path))) return NextResponse.next()
     }
     if (id_rol === 4) {
-      const allowed = ['/vehiculos', '/ordenes', '/api/']
+      const allowed = ['/mi-dashboard', '/vehiculos', '/ordenes', '/api/']
       if (pathname === '/' || allowed.some(path => pathname.startsWith(path))) return NextResponse.next()
     }
 
