@@ -101,6 +101,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const user = session.user as any
+    if (user.id_rol !== 1 && user.id_rol !== 2) {
+      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+    }
+
     const body = await request.json()
     const {
       id_cliente,

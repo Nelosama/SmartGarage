@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(
   request: Request,
@@ -45,6 +47,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const user = session.user as any
+    if (user.id_rol !== 1 && user.id_rol !== 2) {
+      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+    }
+
     const resolvedParams = await params
     const id = parseInt(resolvedParams.id, 10)
 
@@ -111,6 +121,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const user = session.user as any
+    if (user.id_rol !== 1 && user.id_rol !== 2) {
+      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+    }
+
     const resolvedParams = await params
     const id = parseInt(resolvedParams.id, 10)
 
