@@ -41,12 +41,19 @@ export default function AlertasPage() {
             <div className="flex-1">
               <div className="flex justify-between items-start">
                 <h3 className="font-bold text-slate-800">{a.tipo_mantenimiento}</h3>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">ID #{a.id_alerta}</span>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-slate-100 text-slate-500 rounded border border-slate-200">
+                  ID #{a.id_alerta}
+                </span>
               </div>
               <p className="text-sm text-slate-600 mt-1">{a.descripcion}</p>
-              <div className="mt-4 flex items-center gap-6 text-xs font-semibold text-slate-400">
-                <span className="flex items-center gap-1.5"><Car className="h-3.5 w-3.5" /> Vehículo #{a.id_vehiculo}</span>
-                <span className="flex items-center gap-1.5 font-mono bg-slate-100 px-2 py-0.5 rounded">Fecha: {new Date(a.fecha_alerta).toLocaleDateString()}</span>
+              <div className="mt-4 flex items-center gap-6 text-xs font-bold">
+                <span className="flex items-center gap-1.5 text-slate-700 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-100">
+                  <Car className="h-4 w-4 text-orange-600" />
+                  Vehículo #{a.id_vehiculo}
+                </span>
+                <span className="flex items-center gap-1.5 text-slate-500 font-mono bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+                  Fecha: {a.fecha_alerta && !isNaN(new Date(a.fecha_alerta).getTime()) ? new Date(a.fecha_alerta).toLocaleDateString() : 'N/A'}
+                </span>
               </div>
             </div>
           </div>

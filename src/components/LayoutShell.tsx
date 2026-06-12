@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
@@ -29,8 +29,26 @@ interface LayoutShellProps {
 export default function LayoutShell({ children }: LayoutShellProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const user = session?.user as any
+  const [tabSessionChecked, setTabSessionChecked] = useState(false)
+
+  useEffect(() => {
+    if (status === 'loading') return
+
+    if (status === 'authenticated') {
+      const active = sessionStorage.getItem('tab_session_active')
+      if (active === 'true') {
+        setTabSessionChecked(true)
+      } else {
+        sessionStorage.setItem('tab_session_active', 'true')
+        signOut({ callbackUrl: '/login' })
+      }
+    } else if (status === 'unauthenticated') {
+      sessionStorage.setItem('tab_session_active', 'true')
+      setTabSessionChecked(true)
+    }
+  }, [status])
 
   const allMenuItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: [1, 2, 3] },
@@ -40,9 +58,9 @@ export default function LayoutShell({ children }: LayoutShellProps) {
     { name: 'Órdenes de Trabajo', href: '/ordenes', icon: Wrench, roles: [1, 2, 3, 4] },
     { name: 'Diagnósticos', href: '/diagnosticos', icon: Activity, roles: [1, 3] },
     { name: 'Servicios Realizados', href: '/servicios-realizados', icon: ClipboardList, roles: [1, 2, 3] },
-    { name: 'Facturas', href: '/facturas', icon: FileText, roles: [1, 2, 4] },
-    { name: 'Historial Estados', href: '/historial', icon: History, roles: [1, 2, 3] },
-    { name: 'Alertas Mantenimiento', href: '/alertas', icon: AlertTriangle, roles: [1, 2, 4] },
+    // { name: 'Facturas', href: '/facturas', icon: FileText, roles: [1, 2, 4] },
+    // { name: 'Historial Estados', href: '/historial', icon: History, roles: [1, 2, 3] },
+    // { name: 'Alertas Mantenimiento', href: '/alertas', icon: AlertTriangle, roles: [1, 2, 4] },
     { name: 'Catálogo Servicios', href: '/servicios', icon: Activity, roles: [1] },
     { name: 'Inventario Repuestos', href: '/repuestos', icon: Package, roles: [1] },
     { name: 'Equipo Mecánico', href: '/mecanicos', icon: Briefcase, roles: [1] },
@@ -65,6 +83,18 @@ export default function LayoutShell({ children }: LayoutShellProps) {
 
   if (pathname === '/login') {
     return <>{children}</>
+  }
+
+  // Show loading spinner until tab session is verified to prevent private info flashing
+  if (status === 'loading' || !tabSessionChecked) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3 animate-pulse">
+        <div className="p-4 rounded-full bg-orange-50 text-orange-600 animate-spin">
+          <Wrench className="h-8 w-8" />
+        </div>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Verificando sesión...</p>
+      </div>
+    )
   }
 
   return (
@@ -110,7 +140,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
             const Icon = item.icon
             const isActive = item.href === '/' 
               ? pathname === '/' 
-              : pathname.startsWith(item.href)
+              : (pathname === item.href || pathname.startsWith(item.href + '/'))
 
             return (
               <Link
@@ -175,10 +205,6 @@ export default function LayoutShell({ children }: LayoutShellProps) {
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50 text-xs text-slate-500 font-semibold">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Lempiras (HNL)
-            </div>
           </div>
         </header>
 

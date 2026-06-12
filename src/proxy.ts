@@ -24,7 +24,10 @@ export default withAuth(
     if (pathname === '/') return NextResponse.next()
     return NextResponse.redirect(new URL("/", req.url))
   },
-  { callbacks: { authorized: ({ token }) => !!token } }
+  {
+    callbacks: { authorized: ({ token }) => !!token },
+    pages: { signIn: '/login' }
+  }
 )
 
 export const config = {

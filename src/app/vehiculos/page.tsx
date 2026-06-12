@@ -11,6 +11,7 @@ import {
   User,
   X
 } from 'lucide-react'
+import { useSession } from 'next-auth/react'
 
 interface Cliente {
   id: number
@@ -36,6 +37,10 @@ interface Vehiculo {
 }
 
 export default function VehiculosPage() {
+  const { data: session } = useSession()
+  const user = session?.user as any
+  const id_rol = user?.id_rol ? Number(user.id_rol) : null
+
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
@@ -181,9 +186,11 @@ export default function VehiculosPage() {
           </h1>
           <p className="text-slate-500 text-sm">Registro y gestión de unidades de clientes.</p>
         </div>
-        <button onClick={openCreateModal} className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Registrar Vehículo
-        </button>
+        {id_rol !== 4 && (
+          <button onClick={openCreateModal} className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Registrar Vehículo
+          </button>
+        )}
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -207,12 +214,12 @@ export default function VehiculosPage() {
                 <th className="px-6 py-4">Vehículo</th>
                 <th className="px-6 py-4">Propietario</th>
                 <th className="px-6 py-4 text-center">Kilometraje</th>
-                <th className="px-6 py-4 text-right">Acciones</th>
+                {id_rol !== 4 && <th className="px-6 py-4 text-right">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={4} className="px-6 py-12 text-center text-slate-400">Cargando...</td></tr>
+                <tr><td colSpan={id_rol === 4 ? 3 : 4} className="px-6 py-12 text-center text-slate-400">Cargando...</td></tr>
               ) : (
                 vehiculos.map(v => (
                   <tr key={v.id_vehiculo} className="hover:bg-slate-50/50 transition-colors">
@@ -233,12 +240,14 @@ export default function VehiculosPage() {
                     <td className="px-6 py-4 text-center font-mono font-bold text-slate-700">
                       {v.kilometraje_actual.toLocaleString()} KM
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEditModal(v)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"><Edit2 className="h-4 w-4" /></button>
-                        <button onClick={() => handleDelete(v.id_vehiculo)} className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="h-4 w-4" /></button>
-                      </div>
-                    </td>
+                    {id_rol !== 4 && (
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => openEditModal(v)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"><Edit2 className="h-4 w-4" /></button>
+                          <button onClick={() => handleDelete(v.id_vehiculo)} className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

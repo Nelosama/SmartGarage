@@ -39,6 +39,15 @@ export default function FacturasPage() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">Cargando...</td></tr>
+              ) : facturas.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <Receipt className="h-10 w-10 text-slate-200" />
+                      <p className="text-slate-500 font-medium">Aún no se le han generado facturas.</p>
+                    </div>
+                  </td>
+                </tr>
               ) : facturas.map(f => (
                 <tr key={f.id_factura} className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4 font-bold text-slate-800">#{f.id_orden}</td>

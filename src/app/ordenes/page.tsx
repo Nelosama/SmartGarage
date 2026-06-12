@@ -21,6 +21,7 @@ import {
   ArrowUpRight
 } from 'lucide-react'
 import Link from 'next/link'
+import { useSession } from 'next-auth/react'
 
 interface Vehiculo {
   id_vehiculo: number
@@ -67,6 +68,10 @@ interface Orden {
 }
 
 export default function OrdenesPage() {
+  const { data: session } = useSession()
+  const user = session?.user as any
+  const id_rol = user?.id_rol ? Number(user.id_rol) : null
+
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [mecanicos, setMecanicos] = useState<Mecanico[]>([])
@@ -206,8 +211,12 @@ export default function OrdenesPage() {
 
   const filteredOrdenes = useMemo(() => {
     return ordenes.filter(o => {
+      const status = o.estado_actual.nombre_estado
       if (activeTab === 'todos') return true
-      return o.estado_actual.nombre_estado === activeTab
+      if (activeTab === 'Recibido') return ['Recibido', 'En espera'].includes(status)
+      if (activeTab === 'En reparación') return ['En diagnostico', 'En reparacion', 'Esperando repuestos', 'En prueba'].includes(status)
+      if (activeTab === 'Listo para entrega') return status === 'Listo para entrega'
+      return status === activeTab
     })
   }, [ordenes, activeTab])
 
@@ -221,13 +230,15 @@ export default function OrdenesPage() {
           </h1>
           <p className="text-slate-500 text-sm">Control de diagnóstico y reparaciones en curso.</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95"
-        >
-          <Plus className="h-4 w-4" />
-          Nueva Orden
-        </button>
+        {(id_rol === 1 || id_rol === 2) && (
+          <button
+            onClick={openCreateModal}
+            className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Orden
+          </button>
+        )}
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4">
@@ -297,9 +308,11 @@ export default function OrdenesPage() {
                   </span>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => openEditModal(o)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
-                    <Edit2 className="h-4 w-4" />
-                  </button>
+                  {id_rol !== 4 && (
+                    <button onClick={() => openEditModal(o)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                  )}
                   <Link href={`/servicios-realizados?ordenId=${o.id_orden}`} className="p-2 hover:bg-orange-50 rounded-lg text-slate-400 hover:text-orange-600 transition-colors">
                     <Eye className="h-4 w-4" />
                   </Link>
