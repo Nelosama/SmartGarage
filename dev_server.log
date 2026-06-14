@@ -1,0 +1,18 @@
+
+> smart-garage@0.1.0 dev /app
+> next dev --webpack --webpack
+
+▲ Next.js 16.2.7 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+- Environments: .env
+✓ Ready in 519ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+
+○ Compiling /login ...
+ GET /login 200 in 10.5s (next.js: 10.1s, application-code: 393ms)
+ GET /api/auth/session 200 in 2.2s

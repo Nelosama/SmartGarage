@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const user = session.user as any
+    const user = session.user as { id_rol: number, id_usuario: string }
     const { searchParams } = new URL(request.url)
     const vehiculoIdParam = searchParams.get('vehiculoId')
     const query = searchParams.get('q') || ''
@@ -84,12 +84,17 @@ export async function GET(request: Request) {
           },
         },
         estado_actual: true,
+        mecanico: {
+          include: {
+            usuario: true
+          }
+        }
       },
       orderBy: { fecha_ingreso: 'desc' },
     })
 
     return NextResponse.json(ordenes)
-  } catch (error) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('API Error /api/ordenes:', error)
     return NextResponse.json({
@@ -104,7 +109,7 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const user = session.user as any
+    const user = session.user as { id_rol: number }
     if (user.id_rol !== 1 && user.id_rol !== 2) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
@@ -121,8 +126,8 @@ export async function POST(request: Request) {
       observaciones
     } = body
 
-    if (!id_cliente || !id_vehiculo || !id_estado_actual || kilometraje_ingreso === undefined || !motivo_ingreso) {
-      return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
+    if (!id_cliente || !id_vehiculo || !id_estado_actual || kilometraje_ingreso === undefined || !motivo_ingreso || !id_mecanico) {
+      return NextResponse.json({ error: 'Faltan campos obligatorios, incluyendo el mecánico asignado' }, { status: 400 })
     }
 
     const orden = await prisma.ordenTrabajo.create({
@@ -146,12 +151,17 @@ export async function POST(request: Request) {
             },
           },
         },
-        estado_actual: true
+        estado_actual: true,
+        mecanico: {
+          include: {
+            usuario: true
+          }
+        }
       },
     })
 
     return NextResponse.json(orden, { status: 201 })
-  } catch (error) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     console.error('API Error /api/ordenes POST:', error)
     return NextResponse.json({
