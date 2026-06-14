@@ -16,13 +16,32 @@ import {
   Lock
 } from 'lucide-react'
 
+interface Usuario {
+  id_usuario: number
+  nombre: string
+  correo: string
+  telefono: string | null
+  id_rol: number
+  estado: string
+  rol?: {
+    id_rol: number
+    nombre_rol: string
+  }
+}
+
+interface Rol {
+  id_rol: number
+  nombre_rol: string
+}
+
 export default function UsuariosPage() {
   const { data: session } = useSession()
-  const [usuarios, setUsuarios] = useState<any[]>([])
-  const [roles, setRoles] = useState<any[]>([])
+  const [usuarios, setUsuarios] = useState<Usuario[]>([])
+  const [roles, setRoles] = useState<Rol[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<Usuario | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // Form state
@@ -54,7 +73,10 @@ export default function UsuariosPage() {
   }
 
   useEffect(() => {
-    fetchData()
+    const init = async () => {
+      await fetchData()
+    }
+    init()
   }, [])
 
   const handleDelete = async (id: number) => {
@@ -76,9 +98,37 @@ export default function UsuariosPage() {
       }
 
       fetchData()
-    } catch (err: any) {
-      alert(err.message)
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido'
+      alert(errorMsg)
     }
+  }
+
+  const handleEdit = (u: Usuario) => {
+    setEditingUser(u)
+    setFormData({
+      nombre: u.nombre || '',
+      correo: u.correo || '',
+      password: '',
+      telefono: u.telefono || '',
+      id_rol: u.id_rol || 1,
+      estado: u.estado || 'Activo'
+    })
+    setIsModalOpen(true)
+  }
+
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setEditingUser(null)
+    setFormData({
+      nombre: '',
+      correo: '',
+      password: '',
+      telefono: '',
+      id_rol: 1,
+      estado: 'Activo'
+    })
+    setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,29 +136,25 @@ export default function UsuariosPage() {
     setError(null)
 
     try {
-      const res = await fetch('/api/usuarios', {
-        method: 'POST',
+      const url = editingUser ? `/api/usuarios/${editingUser.id_usuario}` : '/api/usuarios'
+      const method = editingUser ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       })
 
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error || 'Error al crear usuario')
+        throw new Error(data.error || `Error al ${editingUser ? 'editar' : 'crear'} usuario`)
       }
 
-      setIsModalOpen(false)
-      setFormData({
-        nombre: '',
-        correo: '',
-        password: '',
-        telefono: '',
-        id_rol: 1,
-        estado: 'Activo'
-      })
+      closeModal()
       fetchData()
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Error desconocido'
+      setError(errorMsg)
     }
   }
 
@@ -117,7 +163,7 @@ export default function UsuariosPage() {
     u.correo?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  if (session?.user && (session.user as any).id_rol !== 1) {
+  if (session?.user && (session.user as { id_rol?: number }).id_rol !== 1) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
         <div className="p-4 bg-red-50 rounded-full text-red-500 mb-4">
@@ -217,7 +263,10 @@ export default function UsuariosPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
+                        <button
+                          onClick={() => handleEdit(u)}
+                          className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
@@ -240,8 +289,10 @@ export default function UsuariosPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-xl font-black text-slate-800">Registrar Usuario</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <h2 className="text-xl font-black text-slate-800">
+                {editingUser ? 'Editar Usuario' : 'Registrar Usuario'}
+              </h2>
+              <button onClick={closeModal} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                 <X className="h-5 w-5 text-slate-400" />
               </button>
             </div>
@@ -292,11 +343,13 @@ export default function UsuariosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Contraseña</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Contraseña {editingUser && '(Dejar en blanco para no cambiar)'}
+                  </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input
-                      required
+                      required={!editingUser}
                       type="password"
                       className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                       placeholder="••••••••"
@@ -345,7 +398,7 @@ export default function UsuariosPage() {
                   type="submit"
                   className="flex-1 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all shadow-lg shadow-orange-500/20 active:scale-95"
                 >
-                  Guardar Usuario
+                  {editingUser ? 'Actualizar Usuario' : 'Guardar Usuario'}
                 </button>
               </div>
             </form>

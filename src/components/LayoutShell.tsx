@@ -31,24 +31,6 @@ export default function LayoutShell({ children }: LayoutShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: session, status } = useSession()
   const user = session?.user as any
-  const [tabSessionChecked, setTabSessionChecked] = useState(false)
-
-  useEffect(() => {
-    if (status === 'loading') return
-
-    if (status === 'authenticated') {
-      const active = sessionStorage.getItem('tab_session_active')
-      if (active === 'true') {
-        setTabSessionChecked(true)
-      } else {
-        sessionStorage.setItem('tab_session_active', 'true')
-        signOut({ callbackUrl: '/login' })
-      }
-    } else if (status === 'unauthenticated') {
-      sessionStorage.setItem('tab_session_active', 'true')
-      setTabSessionChecked(true)
-    }
-  }, [status])
 
   const allMenuItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: [1, 2, 3] },
@@ -85,14 +67,14 @@ export default function LayoutShell({ children }: LayoutShellProps) {
     return <>{children}</>
   }
 
-  // Show loading spinner until tab session is verified to prevent private info flashing
-  if (status === 'loading' || !tabSessionChecked) {
+  // Show loading spinner until session is loaded
+  if (status === 'loading') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3 animate-pulse">
         <div className="p-4 rounded-full bg-orange-50 text-orange-600 animate-spin">
           <Wrench className="h-8 w-8" />
         </div>
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Verificando sesión...</p>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cargando...</p>
       </div>
     )
   }

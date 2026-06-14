@@ -70,6 +70,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
+        maxAge: undefined, // Ensure it behaves as a session cookie if possible
       },
     },
   },
