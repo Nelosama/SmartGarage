@@ -11,6 +11,7 @@ import {
   UserPlus, 
   X,
   AlertCircle,
+  CheckCircle,
   Users,
   CreditCard
 } from 'lucide-react'
@@ -42,10 +43,12 @@ export default function ClientesPage() {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [direccion, setDireccion] = useState('')
   const [identidad, setIdentidad] = useState('')
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
   // Fetch clients
   const fetchClientes = React.useCallback(async (query = '') => {
@@ -98,6 +101,7 @@ export default function ClientesPage() {
     setNombre('')
     setTelefono('')
     setEmail('')
+    setPassword('')
     setDireccion('')
     setIdentidad('')
     setFormError(null)
@@ -118,7 +122,7 @@ export default function ClientesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!nombre || !telefono || !email || !direccion) {
+    if (!nombre || !telefono || !email || !direccion || (modalMode === 'create' && !password)) {
       setFormError('Todos los campos obligatorios deben ser completados')
       return
     }
@@ -132,7 +136,7 @@ export default function ClientesPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, telefono, email, direccion, identidad })
+        body: JSON.stringify({ nombre, telefono, email, direccion, identidad, password })
       })
 
       const data = await res.json()
@@ -142,6 +146,10 @@ export default function ClientesPage() {
       }
 
       setIsModalOpen(false)
+      if (modalMode === 'create') {
+        setSuccessMessage('Cliente registrado con éxito. La contraseña provisional ha sido configurada.')
+        setTimeout(() => setSuccessMessage(null), 5000)
+      }
       void fetchClientes(search)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
@@ -198,6 +206,13 @@ export default function ClientesPage() {
           <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-red-50 text-red-600 border border-red-200/35">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/35 animate-in fade-in slide-in-from-top-2">
+            <CheckCircle className="h-4 w-4 shrink-0" />
+            <span>{successMessage}</span>
           </div>
         )}
 
@@ -354,6 +369,21 @@ export default function ClientesPage() {
                   />
                 </div>
               </div>
+
+              {modalMode === 'create' && (
+                <div className="space-y-1.5">
+                  <label htmlFor="password" className="text-[10px] font-bold text-slate-500 uppercase">Contraseña Provisional</label>
+                  <input
+                    id="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+                    placeholder="Defina la contraseña inicial del cliente"
+                  />
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <label htmlFor="identidad" className="text-[10px] font-bold text-slate-500 uppercase">N° Identidad</label>

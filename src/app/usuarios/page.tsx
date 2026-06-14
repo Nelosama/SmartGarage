@@ -57,6 +57,30 @@ export default function UsuariosPage() {
     fetchData()
   }, [])
 
+  const handleDelete = async (id: number) => {
+    if (id === 1) {
+      alert('No se puede eliminar al Administrador principal.')
+      return
+    }
+
+    if (!confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción eliminará todos sus registros asociados.')) return
+
+    try {
+      const res = await fetch(`/api/usuarios/${id}`, {
+        method: 'DELETE'
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Error al eliminar usuario')
+      }
+
+      fetchData()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -196,7 +220,10 @@ export default function UsuariosPage() {
                         <button className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors">
+                        <button
+                          onClick={() => handleDelete(u.id_usuario)}
+                          className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>

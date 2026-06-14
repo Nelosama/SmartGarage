@@ -290,9 +290,24 @@ export default function OrdenesPage() {
                     </span>
                   </div>
                   <h3 className="font-bold text-slate-800 text-lg">{o.motivo_ingreso}</h3>
-                  <p className="text-sm text-slate-500">
-                    {o.vehiculo.marca} {o.vehiculo.modelo} • <span className="font-mono font-bold text-slate-700">{o.vehiculo.placa}</span>
-                  </p>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1">
+                    <p className="text-sm text-slate-500">
+                      {o.vehiculo.marca} {o.vehiculo.modelo} • <span className="font-mono font-bold text-slate-700">{o.vehiculo.placa}</span>
+                    </p>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      {o.mecanico ? (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-semibold border border-blue-100">
+                          <Wrench className="h-3 w-3" />
+                          <span>{o.mecanico.usuario.nombre}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 font-semibold border border-slate-100">
+                          <Wrench className="h-3 w-3" />
+                          <span>Sin mecánico asignado</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -359,6 +374,18 @@ export default function OrdenesPage() {
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kilometraje</label>
                   <input type="number" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={kilometraje} onChange={(e) => setKilometraje(parseInt(e.target.value))} />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mecánico Asignado</label>
+                  <select required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" value={mecanicoId} onChange={(e) => setMecanicoId(e.target.value)}>
+                    <option value="">Seleccione un mecánico...</option>
+                    {mecanicos.map(m => (
+                      <option key={m.id_mecanico} value={m.id_mecanico}>
+                        {m.usuario.nombre} - {m.especialidad}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>

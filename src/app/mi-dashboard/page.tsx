@@ -2,8 +2,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { Car, ClipboardList, Bell, History } from 'lucide-react'
+import { Car, ClipboardList, Bell, History, Lock, ShieldCheck, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import ChangePasswordSection from '@/components/ChangePasswordSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -117,6 +118,13 @@ export default async function ClientDashboardPage() {
             {myAlerts.length === 0 && <p className="p-8 text-center text-slate-400">No tienes alertas pendientes.</p>}
           </div>
         </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
+        <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-6">
+          <Lock className="h-5 w-5 text-orange-600" /> Configuración de Seguridad
+        </h3>
+        <ChangePasswordSection />
       </div>
     </div>
   )

@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     }))
 
     return NextResponse.json(flattenedClientes)
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('GET /api/clientes error:', error)
     return NextResponse.json({ error: 'Error al obtener los clientes' }, { status: 500 })
   }
@@ -72,9 +72,9 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { nombre, telefono, email, direccion, identidad } = body
+    const { nombre, telefono, email, direccion, identidad, password } = body
 
-    if (!nombre || !telefono || !email || !direccion) {
+    if (!nombre || !telefono || !email || !direccion || !password) {
       return NextResponse.json({ error: 'Todos los campos obligatorios son requeridos' }, { status: 400 })
     }
 
@@ -89,16 +89,18 @@ export async function POST(request: Request) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const usuario = await tx.usuario.create({
-        data: {
-          nombre,
-          correo: email,
-          telefono,
-          password_hash: 'temporalsync',
-          id_rol: rolCliente!.id_rol,
-          estado: 'Activo'
-        }
+      await tx.$executeRaw`
+        INSERT INTO usuarios (id_rol, nombre, correo, password_hash, telefono, estado, fecha_creacion)
+        VALUES (${rolCliente!.id_rol}, ${nombre}, ${email}, crypt(${password}, gen_salt('bf', 10)), ${telefono}, 'Activo', NOW())
+      `
+
+      const usuario = await tx.usuario.findUnique({
+        where: { correo: email }
       })
+
+      if (!usuario) {
+        throw new Error('No se pudo crear el usuario asociado al cliente')
+      }
 
       return await tx.cliente.create({
         data: {
