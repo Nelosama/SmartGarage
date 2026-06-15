@@ -5,20 +5,12 @@ import {
   Plus, 
   Search, 
   Edit2, 
-  Trash2, 
-  Loader2, 
   Wrench,
   Car,
-  Calendar,
-  AlertCircle,
   X,
-  FileText,
   Play,
-  CheckCircle,
   Eye,
-  User,
-  Activity,
-  ArrowUpRight
+  User
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
@@ -69,17 +61,20 @@ interface Orden {
 
 export default function OrdenesPage() {
   const { data: session } = useSession()
-  const user = session?.user as any
+  const user = session?.user as { id_usuario?: string; id_rol?: number; name?: string } | undefined
   const id_rol = user?.id_rol ? Number(user.id_rol) : null
 
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [mecanicos, setMecanicos] = useState<Mecanico[]>([])
+  const [currentMecanico, setCurrentMecanico] = useState<Mecanico | null>(null)
   const [estados, setEstados] = useState<Estado[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'todos' | 'Recibido' | 'En reparación' | 'Listo para entrega'>('todos')
   const [error, setError] = useState<string | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const ignoreError = error
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -100,6 +95,27 @@ export default function OrdenesPage() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
+  const handleTakeOrder = async (orderId: number) => {
+    if (!currentMecanico) return
+    try {
+      setLoading(true)
+      const res = await fetch(`/api/ordenes/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_mecanico: currentMecanico.id_mecanico
+        })
+      })
+      if (!res.ok) throw new Error('Error al tomar la orden')
+      fetchOrders(search)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido'
+      setError(msg)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const fetchOrders = React.useCallback(async (query = '') => {
     try {
       setLoading(true)
@@ -108,8 +124,9 @@ export default function OrdenesPage() {
       if (!ordRes.ok) throw new Error('Error en servidor')
       setOrdenes(await ordRes.json())
       setError(null)
-    } catch (err: any) {
-      setError(`Error: ${err.message}`)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido'
+      setError(`Error: ${msg}`)
     } finally {
       setLoading(false)
     }
@@ -122,17 +139,31 @@ export default function OrdenesPage() {
         fetch('/api/mecanicos'),
         fetch('/api/estados_orden')
       ])
-      setVehiculos(await vehRes.json())
-      setMecanicos(await mecRes.json())
-      setEstados(await estRes.json())
+      const vehs = await vehRes.json()
+      const mecs = await mecRes.json()
+      const ests = await estRes.json()
+
+      setVehiculos(vehs)
+      setMecanicos(mecs)
+      setEstados(ests)
+
+      if (id_rol === 3 && user?.id_usuario) {
+        const myMec = mecs.find((m: { id_usuario: number }) => m.id_usuario === parseInt(user.id_usuario || '0'))
+        if (myMec) setCurrentMecanico(myMec)
+      }
     } catch (err) {
       console.error('Metadata fetch error:', err)
     }
-  }, [])
+  }, [id_rol, user])
 
   useEffect(() => {
-    fetchMetadata()
-    fetchOrders()
+    let mounted = true;
+    (async () => {
+      if (!mounted) return
+      await fetchMetadata()
+      await fetchOrders()
+    })()
+    return () => { mounted = false }
   }, [fetchMetadata, fetchOrders])
 
   useEffect(() => {
@@ -202,8 +233,9 @@ export default function OrdenesPage() {
       if (!res.ok) throw new Error('Error al guardar')
       setIsModalOpen(false)
       fetchOrders(search)
-    } catch (err: any) {
-      setFormError(err.message)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error desconocido'
+      setFormError(msg)
     } finally {
       setFormSubmitting(false)
     }
@@ -323,12 +355,22 @@ export default function OrdenesPage() {
                   </span>
                 </div>
                 <div className="flex gap-2">
+                  {id_rol === 3 && !o.id_mecanico && (
+                    <button
+                      onClick={() => handleTakeOrder(o.id_orden)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase rounded-lg transition-all shadow-md shadow-orange-500/20 active:scale-95"
+                      title="Tomar esta orden"
+                    >
+                      <Play className="h-3 w-3 fill-current" />
+                      Tomar Orden
+                    </button>
+                  )}
                   {id_rol !== 4 && (
-                    <button onClick={() => openEditModal(o)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
+                    <button onClick={() => openEditModal(o)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors" title="Editar orden">
                       <Edit2 className="h-4 w-4" />
                     </button>
                   )}
-                  <Link href={`/servicios-realizados?ordenId=${o.id_orden}`} className="p-2 hover:bg-orange-50 rounded-lg text-slate-400 hover:text-orange-600 transition-colors">
+                  <Link href={`/servicios-realizados?ordenId=${o.id_orden}`} className="p-2 hover:bg-orange-50 rounded-lg text-slate-400 hover:text-orange-600 transition-colors" title="Ver servicios">
                     <Eye className="h-4 w-4" />
                   </Link>
                 </div>
@@ -351,20 +393,20 @@ export default function OrdenesPage() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Motivo de Ingreso</label>
-                  <input required type="text" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+                  <label htmlFor="motivo" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Motivo de Ingreso</label>
+                  <input id="motivo" required type="text" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Vehículo</label>
-                  <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={vehiculoId} onChange={(e) => setVehiculoId(e.target.value)}>
+                  <label htmlFor="vehiculo" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Vehículo</label>
+                  <select id="vehiculo" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={vehiculoId} onChange={(e) => setVehiculoId(e.target.value)}>
                     {vehiculos.map(v => <option key={v.id_vehiculo} value={v.id_vehiculo}>{v.placa} - {v.marca} {v.modelo}</option>)}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Prioridad</label>
-                  <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={prioridad} onChange={(e) => setPrioridad(e.target.value)}>
+                  <label htmlFor="prioridad" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Prioridad</label>
+                  <select id="prioridad" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={prioridad} onChange={(e) => setPrioridad(e.target.value)}>
                     <option value="Baja">Baja</option>
                     <option value="Media">Media</option>
                     <option value="Alta">Alta</option>
@@ -372,14 +414,14 @@ export default function OrdenesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kilometraje</label>
-                  <input type="number" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={kilometraje} onChange={(e) => setKilometraje(parseInt(e.target.value))} />
+                  <label htmlFor="kilometraje" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kilometraje</label>
+                  <input id="kilometraje" type="number" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={kilometraje} onChange={(e) => setKilometraje(parseInt(e.target.value))} />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mecánico Asignado</label>
-                  <select required className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" value={mecanicoId} onChange={(e) => setMecanicoId(e.target.value)}>
-                    <option value="">Seleccione un mecánico...</option>
+                  <label htmlFor="mecanico" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mecánico Asignado</label>
+                  <select id="mecanico" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" value={mecanicoId} onChange={(e) => setMecanicoId(e.target.value)}>
+                    <option value="">Sin asignar / Pendiente</option>
                     {mecanicos.map(m => (
                       <option key={m.id_mecanico} value={m.id_mecanico}>
                         {m.usuario.nombre} - {m.especialidad}
@@ -389,8 +431,8 @@ export default function OrdenesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Estado</label>
-                  <select className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={estadoId} onChange={(e) => setEstadoId(e.target.value)}>
+                  <label htmlFor="estado" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Estado</label>
+                  <select id="estado" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={estadoId} onChange={(e) => setEstadoId(e.target.value)}>
                     {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nombre_estado}</option>)}
                   </select>
                 </div>
