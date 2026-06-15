@@ -33,16 +33,11 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     }
 
     await prisma.$transaction(async (tx) => {
-      // 1. Eliminar historial de estados
       await tx.historialEstadoOrden.deleteMany({ where: { id_usuario } })
 
-      // 2. Verificar si es cliente y eliminar dependencias
       const cliente = await tx.cliente.findUnique({ where: { id_usuario } })
       if (cliente) {
-        // Ordenes (restriccion de FK en BD: Restrict en ordenes_trabajo -> cliente)
-        // Pero el requerimiento dice "eliminar cliente (y sus vehículos y órdenes relacionadas)"
 
-        // Primero eliminar registros hijos de ordenes
         const ordenes = await tx.ordenTrabajo.findMany({ where: { id_cliente: cliente.id_cliente } })
         const idsOrdenes = ordenes.map(o => o.id_orden)
 
@@ -56,21 +51,17 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
           await tx.ordenTrabajo.deleteMany({ where: { id_cliente: cliente.id_cliente } })
         }
 
-        // Vehiculos (tienen CASCADE en la BD segun schema.prisma, pero por si acaso)
         await tx.alertaMantenimiento.deleteMany({ where: { id_vehiculo: { in: (await tx.vehiculo.findMany({where: {id_cliente: cliente.id_cliente}})).map(v => v.id_vehiculo) } } })
         await tx.vehiculo.deleteMany({ where: { id_cliente: cliente.id_cliente } })
 
         await tx.cliente.delete({ where: { id_cliente: cliente.id_cliente } })
       }
 
-      // 3. Verificar si es mecanico
       const mecanico = await tx.mecanico.findUnique({ where: { id_usuario } })
       if (mecanico) {
-        // Las ordenes tienen SetNull en id_mecanico segun el schema, asi que no es estrictamente necesario borrar ordenes
         await tx.mecanico.delete({ where: { id_mecanico: mecanico.id_mecanico } })
       }
 
-      // 4. Finalmente eliminar usuario
       await tx.usuario.delete({ where: { id_usuario } })
     })
 

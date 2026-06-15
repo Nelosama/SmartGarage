@@ -37,12 +37,10 @@ export default function MecanicosPage() {
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedMecanico, setSelectedMecanico] = useState<Mecanico | null>(null)
 
-  // Form states
   const [idUsuario, setIdUsuario] = useState<string>('')
   const [especialidad, setEspecialidad] = useState('')
   const [estado, setEstado] = useState('Disponible')

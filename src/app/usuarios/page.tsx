@@ -44,7 +44,6 @@ export default function UsuariosPage() {
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Form state
   const [formData, setFormData] = useState({
     nombre: '',
     correo: '',

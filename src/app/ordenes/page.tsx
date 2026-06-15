@@ -73,15 +73,12 @@ export default function OrdenesPage() {
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'todos' | 'Recibido' | 'En reparación' | 'Listo para entrega'>('todos')
   const [error, setError] = useState<string | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const ignoreError = error
   
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedOrden, setSelectedOrden] = useState<Orden | null>(null)
   
-  // Form states
   const [motivo, setMotivo] = useState('')
   const [observaciones, setObservaciones] = useState('')
   const [estadoId, setEstadoId] = useState<string>('')

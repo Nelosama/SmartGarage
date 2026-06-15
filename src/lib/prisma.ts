@@ -10,11 +10,10 @@ function createPrismaClient() {
     console.error('DATABASE_URL no está definida en las variables de entorno.')
   }
 
-  // Configuración del pool para PostgreSQL con soporte SSL (necesario para Supabase)
   const pool = new Pool({
     connectionString,
     ssl: {
-      rejectUnauthorized: false // Permite conexiones SSL incluso con certificados auto-firmados
+      rejectUnauthorized: false
     }
   })
 

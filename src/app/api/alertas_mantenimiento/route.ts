@@ -12,7 +12,7 @@ export async function GET() {
     const user = session.user as any
     const whereClause: Prisma.AlertaMantenimientoWhereInput = {}
 
-    if (user.id_rol === 4) { // Cliente
+    if (user.id_rol === 4) {
       const cliente = await prisma.cliente.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
       if (cliente) {
         whereClause.vehiculo = { id_cliente: cliente.id_cliente }

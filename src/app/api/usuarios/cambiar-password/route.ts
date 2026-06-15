@@ -18,7 +18,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
     }
 
-    // Validar contraseña actual
     const valid: { id_usuario: number }[] = await prisma.$queryRaw`
       SELECT id_usuario FROM usuarios
       WHERE id_usuario = ${id_usuario}
@@ -29,7 +28,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'La contraseña actual es incorrecta' }, { status: 400 })
     }
 
-    // Actualizar contraseña
     await prisma.$executeRaw`
       UPDATE usuarios
       SET password_hash = crypt(${passwordNueva}, gen_salt('bf', 10))

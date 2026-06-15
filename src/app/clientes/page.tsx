@@ -34,12 +34,10 @@ export default function ClientesPage() {
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
   
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
   
-  // Form states
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
@@ -50,7 +48,6 @@ export default function ClientesPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  // Fetch clients
   const fetchClientes = React.useCallback(async (query = '') => {
     try {
       setLoading(true)
@@ -83,7 +80,6 @@ export default function ClientesPage() {
     }
   }, [fetchClientes])
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       void fetchClientes(search)
@@ -183,7 +179,6 @@ export default function ClientesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black tracking-tight text-slate-800">Directorio de Clientes</h2>
@@ -200,7 +195,6 @@ export default function ClientesPage() {
         </button>
       </div>
 
-      {/* Search and warnings */}
       <div className="flex flex-col gap-4">
         {error && (
           <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-red-50 text-red-600 border border-red-200/35">
@@ -228,7 +222,6 @@ export default function ClientesPage() {
         </div>
       </div>
 
-      {/* Clients Table */}
       <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -308,7 +301,6 @@ export default function ClientesPage() {
         )}
       </div>
 
-      {/* CREATE/EDIT MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl p-6 space-y-6">

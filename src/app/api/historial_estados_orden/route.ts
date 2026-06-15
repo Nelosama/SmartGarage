@@ -12,14 +12,14 @@ export async function GET() {
     const user = session.user as any
     const whereClause: Prisma.HistorialEstadoOrdenWhereInput = {}
 
-    if (user.id_rol === 3) { // Mecanico
+    if (user.id_rol === 3) {
       const mecanico = await prisma.mecanico.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
       if (mecanico) {
         whereClause.orden = { id_mecanico: mecanico.id_mecanico }
       } else {
         return NextResponse.json([])
       }
-    } else if (user.id_rol === 4) { // Cliente
+    } else if (user.id_rol === 4) {
       const cliente = await prisma.cliente.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
       if (cliente) {
         whereClause.orden = { id_cliente: cliente.id_cliente }

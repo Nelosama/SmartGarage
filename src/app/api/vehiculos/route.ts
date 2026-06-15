@@ -16,8 +16,7 @@ export async function GET(request: Request) {
 
     const whereClause: Prisma.VehiculoWhereInput = {}
 
-    // Role-based filtering
-    if (user.id_rol === 4) { // Cliente
+    if (user.id_rol === 4) {
       const cliente = await prisma.cliente.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
       if (cliente) {
         whereClause.id_cliente = cliente.id_cliente

@@ -30,12 +30,10 @@ export default function RepuestosPage() {
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedRepuesto, setSelectedRepuesto] = useState<Repuesto | null>(null)
 
-  // Form states
   const [nombre, setNombre] = useState('')
   const [marca, setMarca] = useState('')
   const [descripcion, setDescripcion] = useState('')

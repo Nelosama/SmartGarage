@@ -15,8 +15,7 @@ export async function GET(request: Request) {
 
     const whereClause: Prisma.ClienteWhereInput = {}
 
-    // Role-based filtering
-    if (user.id_rol === 4) { // Cliente
+    if (user.id_rol === 4) {
       whereClause.id_usuario = parseInt(user.id_usuario)
     }
 

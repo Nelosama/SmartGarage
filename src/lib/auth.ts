@@ -15,7 +15,6 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.correo || !credentials?.password) return null
 
         try {
-          // Direct SQL query as requested
           const users = await prisma.$queryRaw<any[]>`
             SELECT u.id_usuario, u.nombre, u.correo, u.id_rol, r.nombre_rol
             FROM usuarios u
@@ -70,7 +69,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: undefined, // Ensure it behaves as a session cookie if possible
+        maxAge: undefined,
       },
     },
   },

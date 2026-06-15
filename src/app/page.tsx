@@ -23,12 +23,10 @@ export default async function DashboardPage() {
   const user = session.user as any
   const id_rol = Number(user.id_rol)
 
-  // Redirect Clientes to their specific dashboard
   if (id_rol === 4) {
     redirect('/mi-dashboard')
   }
 
-  // Dashboard for Admin (1) and Reception (2)
   if (id_rol === 1 || id_rol === 2) {
     let stats = {
       clientes: 0,
@@ -142,7 +140,6 @@ export default async function DashboardPage() {
     )
   }
 
-  // Dashboard for Mechanic (3)
   if (id_rol === 3) {
     let myOrders: any[] = []
     let stats = { activas: 0, completadas: 0 }

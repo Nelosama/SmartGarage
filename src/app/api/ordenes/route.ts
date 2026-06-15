@@ -17,9 +17,7 @@ export async function GET(request: Request) {
 
     const whereClause: Prisma.OrdenTrabajoWhereInput = {}
 
-    // Role-based filtering
-    if (user.id_rol === 3) { // Mecanico
-      // Find the mechanic record first
+    if (user.id_rol === 3) {
       const mecanico = await prisma.mecanico.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
       if (mecanico) {
         whereClause.OR = [
@@ -27,9 +25,9 @@ export async function GET(request: Request) {
           { id_mecanico: null }
         ]
       } else {
-        return NextResponse.json([]) // No mechanic record found
+        return NextResponse.json([])
       }
-    } else if (user.id_rol === 4) { // Cliente
+    } else if (user.id_rol === 4) {
       const cliente = await prisma.cliente.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
       if (cliente) {
         whereClause.id_cliente = cliente.id_cliente
