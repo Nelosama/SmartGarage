@@ -22,7 +22,10 @@ export async function GET(request: Request) {
       // Find the mechanic record first
       const mecanico = await prisma.mecanico.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
       if (mecanico) {
-        whereClause.id_mecanico = mecanico.id_mecanico
+        whereClause.OR = [
+          { id_mecanico: mecanico.id_mecanico },
+          { id_mecanico: null }
+        ]
       } else {
         return NextResponse.json([]) // No mechanic record found
       }
@@ -126,8 +129,8 @@ export async function POST(request: Request) {
       observaciones
     } = body
 
-    if (!id_cliente || !id_vehiculo || !id_estado_actual || kilometraje_ingreso === undefined || !motivo_ingreso || !id_mecanico) {
-      return NextResponse.json({ error: 'Faltan campos obligatorios, incluyendo el mecánico asignado' }, { status: 400 })
+    if (!id_cliente || !id_vehiculo || !id_estado_actual || kilometraje_ingreso === undefined || !motivo_ingreso) {
+      return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
     }
 
     const orden = await prisma.ordenTrabajo.create({
