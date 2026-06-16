@@ -2,21 +2,84 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { Car, ClipboardList, Bell, History, Lock } from 'lucide-react'
+import { Car, ClipboardList, Bell, History, Lock, Receipt, CreditCard } from 'lucide-react'
 import ChangePasswordSection from '@/components/ChangePasswordSection'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
+
+interface UserSession {
+  id_rol: number
+  id_usuario: string
+  nombre: string
+}
+
+interface Vehicle {
+  id_vehiculo: number
+  id_cliente: number
+  placa: string
+  marca: string
+  modelo: string
+  anio: number | null
+}
+
+interface Order {
+  id_orden: number
+  vehiculo: Vehicle
+  estado_actual: {
+    nombre_estado: string
+  }
+  mecanico: {
+    usuario: {
+      nombre: string
+    }
+  } | null
+  motivo_ingreso: string
+  diagnostico?: {
+    falla_reportada: string
+    causa_detectada?: string
+    recomendacion?: string
+    observaciones?: string
+  } | null
+  historial_estados: Array<{
+    comentario: string | null
+  }>
+}
+
+interface Alert {
+  id_alerta: string | number
+  es_alerta_diagnostico?: boolean
+  id_orden_origen: number | null
+  estado: string
+  mensaje: string
+  vehiculo: Vehicle
+  servicio: {
+    nombre_servicio: string
+  }
+  orden_origen: Order | null
+}
+
+interface Factura {
+  id_factura: number
+  numero_factura: string | null
+  id_orden: number | null
+  fecha_emision: Date | null
+  total: number | null
+  estado_pago: string | null
+  metodo_pago: string | null
+}
 
 export default async function ClientDashboardPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
 
-  const user = session.user as any
-  if (user.id_rol !== 4) redirect('/')
+  const user = session.user as UserSession
+  if (Number(user.id_rol) !== 4) redirect('/')
 
-  let myVehicles: any[] = []
-  let myActiveOrders: any[] = []
-  let myAlerts: any[] = []
+  let myVehicles: Vehicle[] = []
+  let myActiveOrders: Order[] = []
+  let myAlerts: Alert[] = []
+  let myFacturas: Factura[] = []
 
   try {
     const cliente = await prisma.cliente.findUnique({
@@ -24,10 +87,10 @@ export default async function ClientDashboardPage() {
     })
 
     if (cliente) {
-      const [vehiculos, orders, alerts] = await Promise.all([
+      const [vehiculos, ordersData, alertsData, facturasData] = await Promise.all([
         prisma.vehiculo.findMany({
           where: { id_cliente: cliente.id_cliente },
-        }),
+        }) as Promise<Vehicle[]>,
 
         prisma.ordenTrabajo.findMany({
           where: {
@@ -104,32 +167,46 @@ export default async function ClientDashboardPage() {
             fecha_generada: 'desc',
           },
         }),
+
+        prisma.resumenFactura.findMany({
+          where: {
+            id_orden: {
+              in: (await prisma.ordenTrabajo.findMany({
+                where: { id_cliente: cliente.id_cliente },
+                select: { id_orden: true }
+              })).map(o => o.id_orden)
+            }
+          },
+          orderBy: { fecha_emision: 'desc' }
+        })
       ])
 
+      const orders = ordersData as unknown as Order[]
+      const alerts = alertsData as unknown as Alert[]
+      const facturas = facturasData as unknown as Factura[]
+
       const alertasDesdeDiagnostico = orders
-        .filter((orden: any) => orden.diagnostico)
-        .filter((orden: any) => {
-          return !alerts.some((alerta: any) => alerta.id_orden_origen === orden.id_orden)
+        .filter((orden) => orden.diagnostico)
+        .filter((orden) => {
+          return !alerts.some((alerta) => alerta.id_orden_origen === orden.id_orden)
         })
-        .map((orden: any) => ({
+        .map((orden) => ({
           id_alerta: `diagnostico-${orden.id_orden}`,
           es_alerta_diagnostico: true,
           id_orden_origen: orden.id_orden,
           estado: 'Pendiente',
-          mensaje: `Diagnóstico registrado: ${orden.diagnostico.falla_reportada}`,
+          mensaje: `Diagnóstico registrado: ${orden.diagnostico?.falla_reportada}`,
           vehiculo: orden.vehiculo,
           servicio: {
             nombre_servicio: 'Diagnóstico del mecánico',
           },
-          orden_origen: {
-            ...orden,
-            diagnostico: orden.diagnostico,
-          },
+          orden_origen: orden,
         }))
 
       myVehicles = vehiculos
       myActiveOrders = orders
       myAlerts = [...alerts, ...alertasDesdeDiagnostico]
+      myFacturas = facturas
     }
   } catch (e) {
     console.error(e)
@@ -211,7 +288,7 @@ export default async function ClientDashboardPage() {
                 </div>
 
                 <p className="mt-2 text-sm text-slate-600 italic">
-                  "{o.motivo_ingreso}"
+                  &quot;{o.motivo_ingreso}&quot;
                 </p>
 
                 {o.historial_estados?.[0]?.comentario && (
@@ -293,7 +370,7 @@ export default async function ClientDashboardPage() {
                   ) : (
                     <p className="mt-1 text-xs text-slate-500">
                       {a.orden_origen?.historial_estados?.[0]?.comentario ||
-                        a.orden_origen?.observaciones ||
+                        a.orden_origen?.motivo_ingreso ||
                         a.mensaje ||
                         'Sin observaciones registradas'}
                     </p>
@@ -308,6 +385,60 @@ export default async function ClientDashboardPage() {
               </p>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Nueva Sección: Mis Facturas */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100">
+          <h3 className="font-bold text-slate-800 flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-orange-600" />
+            Mis Facturas
+          </h3>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 text-xs">
+                <th className="px-6 py-4">N° FACTURA</th>
+                <th className="px-6 py-4">EMISIÓN</th>
+                <th className="px-6 py-4">TOTAL</th>
+                <th className="px-6 py-4">ESTADO</th>
+                <th className="px-6 py-4">MÉTODO</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {myFacturas.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                    Aún no se le han generado facturas.
+                  </td>
+                </tr>
+              ) : myFacturas.map((f) => (
+                <tr key={f.id_factura} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4 font-bold text-slate-800">{f.numero_factura}</td>
+                  <td className="px-6 py-4 text-slate-500">{f.fecha_emision ? formatDate(f.fecha_emision) : '-'}</td>
+                  <td className="px-6 py-4 font-black text-orange-600">{f.total ? formatCurrency(f.total) : '-'}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                      f.estado_pago === 'Pagado' ? 'bg-emerald-50 text-emerald-700' :
+                      f.estado_pago === 'Pendiente' ? 'bg-amber-50 text-amber-700' :
+                      'bg-red-50 text-red-700'
+                    }`}>
+                      {f.estado_pago}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <CreditCard className="h-3.5 w-3.5" />
+                      <span className="font-medium text-xs">{f.metodo_pago}</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
