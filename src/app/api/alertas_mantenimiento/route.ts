@@ -12,8 +12,11 @@ export async function GET() {
     const user = session.user as any
     const whereClause: Prisma.AlertaMantenimientoWhereInput = {}
 
-    if (user.id_rol === 4) { // Cliente
-      const cliente = await prisma.cliente.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
+    if (user.id_rol === 4) {
+      const cliente = await prisma.cliente.findUnique({
+        where: { id_usuario: parseInt(user.id_usuario) },
+      })
+
       if (cliente) {
         whereClause.vehiculo = { id_cliente: cliente.id_cliente }
       } else {
@@ -23,34 +26,71 @@ export async function GET() {
 
     const alertas = await prisma.alertaMantenimiento.findMany({
       where: whereClause,
-      include: { vehiculo: true, servicio: true },
+      include: {
+        vehiculo: true,
+        servicio: true,
+      },
+      orderBy: {
+        fecha_generada: 'desc',
+      },
     })
+
     return NextResponse.json(alertas)
   } catch (error: any) {
-    return NextResponse.json({ error: 'Error al obtener alertas', details: error.message }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Error al obtener alertas', details: error.message },
+      { status: 500 }
+    )
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    const user = session.user as any
+    if (user.id_rol !== 1 && user.id_rol !== 2) {
+      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+    }
+
     const body = await request.json()
-    const { id_vehiculo, id_servicio, id_orden_origen, kilometraje_referencia, kilometraje_objetivo, fecha_objetivo, mensaje, estado } = body
-    if (!id_vehiculo || !id_servicio || !mensaje) return NextResponse.json({ error: 'Vehiculo, servicio y mensaje son requeridos' }, { status: 400 })
+    const {
+      id_vehiculo,
+      id_servicio,
+      id_orden_origen,
+      kilometraje_referencia,
+      kilometraje_objetivo,
+      fecha_objetivo,
+      mensaje,
+      estado,
+    } = body
+
+    if (!id_vehiculo || !id_servicio || !mensaje) {
+      return NextResponse.json(
+        { error: 'Vehiculo, servicio y mensaje son requeridos' },
+        { status: 400 }
+      )
+    }
 
     const alerta = await prisma.alertaMantenimiento.create({
       data: {
-        id_vehiculo,
-        id_servicio,
-        id_orden_origen,
-        kilometraje_referencia,
-        kilometraje_objetivo,
+        id_vehiculo: Number(id_vehiculo),
+        id_servicio: Number(id_servicio),
+        id_orden_origen: id_orden_origen ? Number(id_orden_origen) : null,
+        kilometraje_referencia: kilometraje_referencia ? Number(kilometraje_referencia) : null,
+        kilometraje_objetivo: kilometraje_objetivo ? Number(kilometraje_objetivo) : null,
         fecha_objetivo: fecha_objetivo ? new Date(fecha_objetivo) : null,
         mensaje,
-        estado: estado || 'Pendiente'
+        estado: estado || 'Pendiente',
       },
     })
+
     return NextResponse.json(alerta, { status: 201 })
   } catch (error: any) {
-    return NextResponse.json({ error: 'Error al crear alerta', details: error.message }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Error al crear alerta', details: error.message },
+      { status: 500 }
+    )
   }
 }

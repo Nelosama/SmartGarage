@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
-import { 
-  Plus, 
-  Search, 
-  Edit2, 
+import {
+  Plus,
+  Search,
+  Edit2,
   Wrench,
   Car,
   X,
@@ -30,6 +30,7 @@ interface Vehiculo {
 
 interface Mecanico {
   id_mecanico: number
+  id_usuario?: number
   especialidad: string
   usuario: {
     nombre: string
@@ -59,6 +60,13 @@ interface Orden {
   mecanico?: Mecanico
 }
 
+function toDateInputValue(dateValue?: string | null) {
+  if (!dateValue) return ''
+  const date = new Date(dateValue)
+  if (isNaN(date.getTime())) return ''
+  return date.toISOString().split('T')[0]
+}
+
 export default function OrdenesPage() {
   const { data: session } = useSession()
   const user = session?.user as { id_usuario?: string; id_rol?: number; name?: string } | undefined
@@ -73,15 +81,12 @@ export default function OrdenesPage() {
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<'todos' | 'Recibido' | 'En reparación' | 'Listo para entrega'>('todos')
   const [error, setError] = useState<string | null>(null)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const ignoreError = error
-  
-  // Modal states
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedOrden, setSelectedOrden] = useState<Orden | null>(null)
-  
-  // Form states
+
   const [motivo, setMotivo] = useState('')
   const [observaciones, setObservaciones] = useState('')
   const [estadoId, setEstadoId] = useState<string>('')
@@ -97,8 +102,10 @@ export default function OrdenesPage() {
 
   const handleTakeOrder = async (orderId: number) => {
     if (!currentMecanico) return
+
     try {
       setLoading(true)
+
       const res = await fetch(`/api/ordenes/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -106,7 +113,9 @@ export default function OrdenesPage() {
           id_mecanico: currentMecanico.id_mecanico
         })
       })
+
       if (!res.ok) throw new Error('Error al tomar la orden')
+
       fetchOrders(search)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido'
@@ -119,9 +128,12 @@ export default function OrdenesPage() {
   const fetchOrders = React.useCallback(async (query = '') => {
     try {
       setLoading(true)
+
       const ordURL = `/api/ordenes${query ? `?q=${encodeURIComponent(query)}` : ''}`
       const ordRes = await fetch(ordURL)
+
       if (!ordRes.ok) throw new Error('Error en servidor')
+
       setOrdenes(await ordRes.json())
       setError(null)
     } catch (err: unknown) {
@@ -139,6 +151,7 @@ export default function OrdenesPage() {
         fetch('/api/mecanicos'),
         fetch('/api/estados_orden')
       ])
+
       const vehs = await vehRes.json()
       const mecs = await mecRes.json()
       const ests = await estRes.json()
@@ -148,28 +161,33 @@ export default function OrdenesPage() {
       setEstados(ests)
 
       if (id_rol === 3 && user?.id_usuario) {
-        const myMec = mecs.find((m: { id_usuario: number }) => m.id_usuario === parseInt(user.id_usuario || '0'))
+        const myMec = mecs.find((m: Mecanico) => Number(m.id_usuario) === parseInt(user.id_usuario || '0'))
         if (myMec) setCurrentMecanico(myMec)
       }
     } catch (err) {
       console.error('Metadata fetch error:', err)
     }
-  }, [id_rol, user])
+  }, [id_rol, user?.id_usuario])
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
+    let mounted = true
+
+    ;(async () => {
       if (!mounted) return
       await fetchMetadata()
       await fetchOrders()
     })()
-    return () => { mounted = false }
+
+    return () => {
+      mounted = false
+    }
   }, [fetchMetadata, fetchOrders])
 
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchOrders(search)
     }, 300)
+
     return () => clearTimeout(timer)
   }, [search, fetchOrders])
 
@@ -199,16 +217,18 @@ export default function OrdenesPage() {
     setVehiculoId(orden.id_vehiculo.toString())
     setPrioridad(orden.prioridad)
     setKilometraje(orden.kilometraje_ingreso)
-    setFechaIngreso(new Date(orden.fecha_ingreso).toISOString().split('T')[0])
-    setFechaEstimada(orden.fecha_estimada_entrega ? new Date(orden.fecha_estimada_entrega).toISOString().split('T')[0] : '')
+    setFechaIngreso(toDateInputValue(orden.fecha_ingreso))
+    setFechaEstimada(toDateInputValue(orden.fecha_estimada_entrega))
     setFormError(null)
     setIsModalOpen(true)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     try {
       setFormSubmitting(true)
+
       const url = modalMode === 'create' ? '/api/ordenes' : `/api/ordenes/${selectedOrden?.id_orden}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
       const selectedVeh = vehiculos.find(v => v.id_vehiculo === parseInt(vehiculoId))
@@ -224,13 +244,14 @@ export default function OrdenesPage() {
           id_vehiculo: parseInt(vehiculoId),
           id_cliente: selectedVeh?.id_cliente,
           prioridad,
-          kilometraje_ingreso: parseInt(kilometraje.toString()),
-          fecha_ingreso: new Date(fechaIngreso).toISOString(),
+          kilometraje_ingreso: Number(kilometraje),
+          fecha_ingreso: fechaIngreso ? new Date(fechaIngreso).toISOString() : null,
           fecha_estimada_entrega: fechaEstimada ? new Date(fechaEstimada).toISOString() : null
         })
       })
 
       if (!res.ok) throw new Error('Error al guardar')
+
       setIsModalOpen(false)
       fetchOrders(search)
     } catch (err: unknown) {
@@ -244,10 +265,12 @@ export default function OrdenesPage() {
   const filteredOrdenes = useMemo(() => {
     return ordenes.filter(o => {
       const status = o.estado_actual.nombre_estado
+
       if (activeTab === 'todos') return true
       if (activeTab === 'Recibido') return ['Recibido', 'En espera'].includes(status)
       if (activeTab === 'En reparación') return ['En diagnostico', 'En reparacion', 'Esperando repuestos', 'En prueba'].includes(status)
       if (activeTab === 'Listo para entrega') return status === 'Listo para entrega'
+
       return status === activeTab
     })
   }, [ordenes, activeTab])
@@ -262,6 +285,7 @@ export default function OrdenesPage() {
           </h1>
           <p className="text-slate-500 text-sm">Control de diagnóstico y reparaciones en curso.</p>
         </div>
+
         {(id_rol === 1 || id_rol === 2) && (
           <button
             onClick={openCreateModal}
@@ -287,6 +311,7 @@ export default function OrdenesPage() {
             </button>
           ))}
         </div>
+
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
@@ -303,7 +328,9 @@ export default function OrdenesPage() {
         {loading ? (
           <div className="text-center py-12 text-slate-400">Cargando órdenes...</div>
         ) : filteredOrdenes.length === 0 ? (
-          <div className="text-center py-12 text-slate-400 bg-white border border-slate-200 rounded-2xl">No hay órdenes que coincidan.</div>
+          <div className="text-center py-12 text-slate-400 bg-white border border-slate-200 rounded-2xl">
+            No hay órdenes que coincidan.
+          </div>
         ) : filteredOrdenes.map((o) => (
           <div key={o.id_orden} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:border-orange-200 transition-all group">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -311,21 +338,26 @@ export default function OrdenesPage() {
                 <div className="p-3 rounded-xl bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-600 transition-colors">
                   <Car className="h-6 w-6" />
                 </div>
+
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded tracking-wider">#{o.id_orden}</span>
                     <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${
                       o.prioridad === 'Alta' ? 'bg-red-50 text-red-600 border-red-100' :
-                      o.prioridad === 'Media' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-600 border-slate-100'
+                      o.prioridad === 'Media' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                      'bg-slate-50 text-slate-600 border-slate-100'
                     }`}>
                       {o.prioridad}
                     </span>
                   </div>
+
                   <h3 className="font-bold text-slate-800 text-lg">{o.motivo_ingreso}</h3>
+
                   <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1">
                     <p className="text-sm text-slate-500">
                       {o.vehiculo.marca} {o.vehiculo.modelo} • <span className="font-mono font-bold text-slate-700">{o.vehiculo.placa}</span>
                     </p>
+
                     <div className="flex items-center gap-1.5 text-xs">
                       {o.mecanico ? (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-semibold border border-blue-100">
@@ -340,20 +372,31 @@ export default function OrdenesPage() {
                       )}
                     </div>
                   </div>
+
+                  {o.observaciones && (
+                    <p className="mt-2 text-xs text-slate-500 italic">
+                      Observación: {o.observaciones}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-6 text-sm">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Cliente</span>
-                  <span className="font-semibold text-slate-700 flex items-center gap-1.5"><User className="h-3.5 w-3.5" /> {o.vehiculo.cliente.usuario.nombre}</span>
+                  <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5" />
+                    {o.vehiculo.cliente.usuario.nombre}
+                  </span>
                 </div>
+
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Estado</span>
                   <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold mt-0.5">
                     {o.estado_actual.nombre_estado}
                   </span>
                 </div>
+
                 <div className="flex gap-2">
                   {id_rol === 3 && !o.id_mecanico && (
                     <button
@@ -365,12 +408,22 @@ export default function OrdenesPage() {
                       Tomar Orden
                     </button>
                   )}
+
                   {id_rol !== 4 && (
-                    <button onClick={() => openEditModal(o)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors" title="Editar orden">
+                    <button
+                      onClick={() => openEditModal(o)}
+                      className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
+                      title="Editar orden"
+                    >
                       <Edit2 className="h-4 w-4" />
                     </button>
                   )}
-                  <Link href={`/servicios-realizados?ordenId=${o.id_orden}`} className="p-2 hover:bg-orange-50 rounded-lg text-slate-400 hover:text-orange-600 transition-colors" title="Ver servicios">
+
+                  <Link
+                    href={`/servicios-realizados?ordenId=${o.id_orden}`}
+                    className="p-2 hover:bg-orange-50 rounded-lg text-slate-400 hover:text-orange-600 transition-colors"
+                    title="Ver servicios"
+                  >
                     <Eye className="h-4 w-4" />
                   </Link>
                 </div>
@@ -384,29 +437,68 @@ export default function OrdenesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-in">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-xl font-black text-slate-800">{modalMode === 'create' ? 'Nueva Orden' : 'Editar Orden'}</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="h-5 w-5 text-slate-400" /></button>
+              <h2 className="text-xl font-black text-slate-800">
+                {modalMode === 'create' ? 'Nueva Orden' : 'Editar Orden'}
+              </h2>
+
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5 text-slate-400" />
+              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              {formError && <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-100">{formError}</div>}
+              {formError && (
+                <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-100">
+                  {formError}
+                </div>
+              )}
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label htmlFor="motivo" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Motivo de Ingreso</label>
-                  <input id="motivo" required type="text" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+                  <label htmlFor="motivo" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Motivo de Ingreso
+                  </label>
+                  <input
+                    id="motivo"
+                    required
+                    type="text"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500"
+                    value={motivo}
+                    onChange={(e) => setMotivo(e.target.value)}
+                  />
                 </div>
 
                 <div>
-                  <label htmlFor="vehiculo" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Vehículo</label>
-                  <select id="vehiculo" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={vehiculoId} onChange={(e) => setVehiculoId(e.target.value)}>
-                    {vehiculos.map(v => <option key={v.id_vehiculo} value={v.id_vehiculo}>{v.placa} - {v.marca} {v.modelo}</option>)}
+                  <label htmlFor="vehiculo" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Vehículo
+                  </label>
+                  <select
+                    id="vehiculo"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none"
+                    value={vehiculoId}
+                    onChange={(e) => setVehiculoId(e.target.value)}
+                  >
+                    {vehiculos.map(v => (
+                      <option key={v.id_vehiculo} value={v.id_vehiculo}>
+                        {v.placa} - {v.marca} {v.modelo}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
-                  <label htmlFor="prioridad" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Prioridad</label>
-                  <select id="prioridad" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={prioridad} onChange={(e) => setPrioridad(e.target.value)}>
+                  <label htmlFor="prioridad" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Prioridad
+                  </label>
+                  <select
+                    id="prioridad"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none"
+                    value={prioridad}
+                    onChange={(e) => setPrioridad(e.target.value)}
+                  >
                     <option value="Baja">Baja</option>
                     <option value="Media">Media</option>
                     <option value="Alta">Alta</option>
@@ -414,13 +506,28 @@ export default function OrdenesPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="kilometraje" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Kilometraje</label>
-                  <input id="kilometraje" type="number" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={kilometraje} onChange={(e) => setKilometraje(parseInt(e.target.value))} />
+                  <label htmlFor="kilometraje" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Kilometraje
+                  </label>
+                  <input
+                    id="kilometraje"
+                    type="number"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none"
+                    value={kilometraje}
+                    onChange={(e) => setKilometraje(Number(e.target.value))}
+                  />
                 </div>
 
                 <div>
-                  <label htmlFor="mecanico" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Mecánico Asignado</label>
-                  <select id="mecanico" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500" value={mecanicoId} onChange={(e) => setMecanicoId(e.target.value)}>
+                  <label htmlFor="mecanico" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Mecánico Asignado
+                  </label>
+                  <select
+                    id="mecanico"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500"
+                    value={mecanicoId}
+                    onChange={(e) => setMecanicoId(e.target.value)}
+                  >
                     <option value="">Sin asignar / Pendiente</option>
                     {mecanicos.map(m => (
                       <option key={m.id_mecanico} value={m.id_mecanico}>
@@ -431,10 +538,60 @@ export default function OrdenesPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="estado" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Estado</label>
-                  <select id="estado" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none" value={estadoId} onChange={(e) => setEstadoId(e.target.value)}>
-                    {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nombre_estado}</option>)}
+                  <label htmlFor="estado" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Estado
+                  </label>
+                  <select
+                    id="estado"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none"
+                    value={estadoId}
+                    onChange={(e) => setEstadoId(e.target.value)}
+                  >
+                    {estados.map(e => (
+                      <option key={e.id_estado} value={e.id_estado}>
+                        {e.nombre_estado}
+                      </option>
+                    ))}
                   </select>
+                </div>
+
+                <div>
+                  <label htmlFor="fechaIngreso" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Fecha de Ingreso
+                  </label>
+                  <input
+                    id="fechaIngreso"
+                    type="date"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none"
+                    value={fechaIngreso}
+                    onChange={(e) => setFechaIngreso(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="fechaEstimada" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Fecha Estimada de Entrega
+                  </label>
+                  <input
+                    id="fechaEstimada"
+                    type="date"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none"
+                    value={fechaEstimada}
+                    onChange={(e) => setFechaEstimada(e.target.value)}
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="observaciones" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Observaciones del mecánico
+                  </label>
+                  <textarea
+                    id="observaciones"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-orange-500 min-h-[100px] resize-none"
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                    placeholder="Ejemplo: Se detectó desgaste en las pastillas delanteras..."
+                  />
                 </div>
               </div>
 
@@ -446,6 +603,7 @@ export default function OrdenesPage() {
                 >
                   Cancelar
                 </button>
+
                 <button
                   type="submit"
                   disabled={formSubmitting}

@@ -40,21 +40,25 @@ export default function HistorialPage() {
               {loading ? (
                 <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">Cargando...</td></tr>
               ) : historial.map(h => (
-                <tr key={h.id_historial} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-slate-800">#{h.id_orden}</td>
-                  <td className="px-6 py-4">
-                    <span className="text-slate-400 font-medium">{h.estado_anterior?.nombre_estado || 'N/A'}</span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <ArrowRight className="h-3 w-3 text-slate-300 mx-auto" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-bold text-orange-600">{h.estado_nuevo?.nombre_estado}</span>
-                  </td>
-                  <td className="px-6 py-4 text-right text-xs text-slate-400">
-                    {new Date(h.fecha_cambio).toLocaleString('es-HN')}
-                  </td>
-                </tr>
+                <tr key={h.id_historial_estado} className="hover:bg-slate-50 transition-colors">
+  <td className="px-6 py-4 font-bold text-slate-800">#{h.id_orden}</td>
+
+  <td className="px-6 py-4">
+    <span className="text-slate-400 font-medium">Cambio registrado</span>
+  </td>
+
+  <td className="px-6 py-4 text-center">
+    <ArrowRight className="h-3 w-3 text-slate-300 mx-auto" />
+  </td>
+
+  <td className="px-6 py-4">
+    <span className="font-bold text-orange-600">{h.estado?.nombre_estado || 'N/A'}</span>
+  </td>
+
+  <td className="px-6 py-4 text-right text-xs text-slate-400">
+    {h.fecha_hora ? new Date(h.fecha_hora).toLocaleString('es-HN') : 'N/A'}
+  </td>
+</tr>
               ))}
             </tbody>
           </table>
