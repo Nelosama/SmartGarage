@@ -41,6 +41,24 @@ export default async function ClientDashboardPage() {
           include: {
             vehiculo: true,
             estado_actual: true,
+            mecanico: {
+              include: {
+                usuario: true,
+              },
+            },
+            historial_estados: {
+              include: {
+                estado: true,
+                usuario: true,
+              },
+              orderBy: {
+                fecha_hora: 'desc',
+              },
+              take: 1,
+            },
+          },
+          orderBy: {
+            fecha_ingreso: 'desc',
           },
         }),
 
@@ -55,6 +73,7 @@ export default async function ClientDashboardPage() {
             orden_origen: {
               include: {
                 estado_actual: true,
+                diagnostico: true,
                 historial_estados: {
                   include: {
                     estado: true,
@@ -135,12 +154,21 @@ export default async function ClientDashboardPage() {
           <div className="divide-y divide-slate-100">
             {myActiveOrders.map((o) => (
               <div key={o.id_orden} className="p-4 hover:bg-slate-50 transition-colors">
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-3">
                   <div>
                     <p className="font-bold text-slate-800">
                       {o.vehiculo.marca} {o.vehiculo.modelo}
                     </p>
-                    <p className="text-xs text-slate-500">Placa: {o.vehiculo.placa}</p>
+
+                    <p className="text-xs text-slate-500">
+                      Placa: {o.vehiculo.placa}
+                    </p>
+
+                    {o.mecanico?.usuario?.nombre && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Mecánico asignado: {o.mecanico.usuario.nombre}
+                      </p>
+                    )}
                   </div>
 
                   <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-700 text-[10px] font-bold uppercase">
@@ -148,7 +176,15 @@ export default async function ClientDashboardPage() {
                   </span>
                 </div>
 
-                <p className="mt-2 text-sm text-slate-600 italic">"{o.motivo_ingreso}"</p>
+                <p className="mt-2 text-sm text-slate-600 italic">
+                  "{o.motivo_ingreso}"
+                </p>
+
+                {o.historial_estados?.[0]?.comentario && (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Última actualización: {o.historial_estados[0].comentario}
+                  </p>
+                )}
               </div>
             ))}
 
@@ -169,24 +205,66 @@ export default async function ClientDashboardPage() {
           </div>
 
           <div className="divide-y divide-slate-100">
-            {myAlerts.map((a) => (
-              <div key={a.id_alerta} className="p-4 hover:bg-red-50 transition-colors">
-                <p className="text-xs text-slate-600">
-                  {a.vehiculo.marca} {a.vehiculo.modelo} ({a.vehiculo.placa})
-                </p>
+            {myAlerts.map((a) => {
+              const diagnostico = a.orden_origen?.diagnostico
 
-                <p className="mt-2 text-[10px] text-slate-400 font-bold uppercase">
-                  Estado actual: {a.orden_origen?.estado_actual?.nombre_estado || 'Sin estado registrado'}
-                </p>
+              return (
+                <div key={a.id_alerta} className="p-4 hover:bg-red-50 transition-colors">
+                  <p className="text-xs text-slate-600">
+                    {a.vehiculo.marca} {a.vehiculo.modelo} ({a.vehiculo.placa})
+                  </p>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  {a.orden_origen?.historial_estados?.[0]?.comentario ||
-                    a.orden_origen?.observaciones ||
-                    a.mensaje ||
-                    'Sin observaciones registradas'}
-                </p>
-              </div>
-            ))}
+                  <p className="mt-1 text-xs font-bold text-slate-700">
+                    Servicio sugerido: {a.servicio?.nombre_servicio || 'Servicio no especificado'}
+                  </p>
+
+                  <p className="mt-2 text-[10px] text-slate-400 font-bold uppercase">
+                    Estado actual: {a.orden_origen?.estado_actual?.nombre_estado || 'Sin estado registrado'}
+                  </p>
+
+                  {diagnostico ? (
+                    <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs">
+                      <p className="font-black text-blue-700 uppercase mb-1">
+                        Diagnóstico relacionado
+                      </p>
+
+                      <p className="text-slate-700">
+                        <span className="font-bold">Falla reportada:</span>{' '}
+                        {diagnostico.falla_reportada}
+                      </p>
+
+                      {diagnostico.causa_detectada && (
+                        <p className="text-slate-600 mt-1">
+                          <span className="font-bold">Causa detectada:</span>{' '}
+                          {diagnostico.causa_detectada}
+                        </p>
+                      )}
+
+                      {diagnostico.recomendacion && (
+                        <p className="text-slate-600 mt-1">
+                          <span className="font-bold">Recomendación:</span>{' '}
+                          {diagnostico.recomendacion}
+                        </p>
+                      )}
+
+                      {diagnostico.observaciones && (
+                        <p className="text-slate-500 mt-1">
+                          <span className="font-bold">Observaciones:</span>{' '}
+                          {diagnostico.observaciones}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-slate-500">
+                      {a.orden_origen?.historial_estados?.[0]?.comentario ||
+                        a.orden_origen?.observaciones ||
+                        a.mensaje ||
+                        'Sin observaciones registradas'}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
 
             {myAlerts.length === 0 && (
               <p className="p-8 text-center text-slate-400">

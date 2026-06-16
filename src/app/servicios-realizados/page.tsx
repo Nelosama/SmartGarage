@@ -125,13 +125,15 @@ function ServiciosRealizadosContent() {
     return Number(servicio?.precio_base || 0)
   }
 
-  const createDefaultItem = (): ServicioItem => {
-    const first = catalogoServicios[0]
+  const createDefaultItem = (excludeIds: string[] = []): ServicioItem => {
+    const firstAvailable =
+      catalogoServicios.find(s => !excludeIds.includes(s.id_servicio.toString())) ||
+      catalogoServicios[0]
 
     return {
-      id_servicio: first?.id_servicio?.toString() || '',
+      id_servicio: firstAvailable?.id_servicio?.toString() || '',
       cantidad: 1,
-      precio_unitario: Number(first?.precio_base || 0)
+      precio_unitario: Number(firstAvailable?.precio_base || 0)
     }
   }
 
@@ -162,7 +164,10 @@ function ServiciosRealizadosContent() {
   }
 
   const addItem = () => {
-    setItems(prev => [...prev, createDefaultItem()])
+    setItems(prev => {
+      const usedIds = prev.map(item => item.id_servicio)
+      return [...prev, createDefaultItem(usedIds)]
+    })
   }
 
   const removeItem = (index: number) => {
@@ -224,31 +229,38 @@ function ServiciosRealizadosContent() {
         throw new Error('Revisa los servicios, cantidades y precios')
       }
 
-      const url =
-        modalMode === 'create'
-          ? '/api/servicios-realizados'
-          : `/api/servicios-realizados/${selectedServicio?.id_orden_servicio}`
+      const serviceIds = items.map(item => item.id_servicio)
+      const hasDuplicates = new Set(serviceIds).size !== serviceIds.length
 
-      const method = modalMode === 'create' ? 'POST' : 'PUT'
+      if (hasDuplicates) {
+        throw new Error('No repitas el mismo servicio. Usa la cantidad si necesitas cobrar más de una vez.')
+      }
 
-      const body =
-        modalMode === 'create'
-          ? {
-              id_orden: Number(ordenId),
-              items: items.map(item => ({
-                id_servicio: Number(item.id_servicio),
-                cantidad: Number(item.cantidad),
-                precio_unitario: Number(item.precio_unitario)
-              })),
-              observaciones
-            }
-          : {
-              id_servicio: Number(items[0].id_servicio),
-              id_orden: Number(ordenId),
-              cantidad: Number(items[0].cantidad),
-              precio_unitario: Number(items[0].precio_unitario),
-              observaciones
-            }
+      const shouldUseBulkSave = modalMode === 'create' || items.length > 1
+
+      const url = shouldUseBulkSave
+        ? '/api/servicios-realizados'
+        : `/api/servicios-realizados/${selectedServicio?.id_orden_servicio}`
+
+      const method = shouldUseBulkSave ? 'POST' : 'PUT'
+
+      const body = shouldUseBulkSave
+        ? {
+            id_orden: Number(ordenId),
+            items: items.map(item => ({
+              id_servicio: Number(item.id_servicio),
+              cantidad: Number(item.cantidad),
+              precio_unitario: Number(item.precio_unitario)
+            })),
+            observaciones
+          }
+        : {
+            id_servicio: Number(items[0].id_servicio),
+            id_orden: Number(ordenId),
+            cantidad: Number(items[0].cantidad),
+            precio_unitario: Number(items[0].precio_unitario),
+            observaciones
+          }
 
       const res = await fetch(url, {
         method,
@@ -415,12 +427,12 @@ function ServiciosRealizadosContent() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-scale-in">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-scale-in my-6 max-h-[calc(100vh-3rem)] flex flex-col">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
               <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-orange-600" />
-                {modalMode === 'create' ? 'Registrar Servicios' : 'Editar Servicio'}
+                {modalMode === 'create' ? 'Registrar Servicios' : 'Editar / Agregar Servicios'}
               </h2>
 
               <button
@@ -431,7 +443,7 @@ function ServiciosRealizadosContent() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
               {formError && (
                 <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-100">
                   {formError}
@@ -472,16 +484,14 @@ function ServiciosRealizadosContent() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-bold text-slate-500 uppercase">Servicios</p>
 
-                  {modalMode === 'create' && (
-                    <button
-                      type="button"
-                      onClick={addItem}
-                      className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Agregar servicio
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Agregar servicio
+                  </button>
                 </div>
 
                 {items.map((item, index) => (
@@ -538,7 +548,7 @@ function ServiciosRealizadosContent() {
                     </div>
 
                     <div className="col-span-2 md:col-span-1 flex justify-end">
-                      {modalMode === 'create' && items.length > 1 && (
+                      {((modalMode === 'create' && items.length > 1) || (modalMode === 'edit' && index > 0)) && (
                         <button
                           type="button"
                           onClick={() => removeItem(index)}
@@ -583,7 +593,7 @@ function ServiciosRealizadosContent() {
                 </p>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-4 sticky bottom-0 bg-white border-t border-slate-100 -mx-6 -mb-6 px-6 py-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -601,7 +611,9 @@ function ServiciosRealizadosContent() {
                     ? 'Guardando...'
                     : modalMode === 'create'
                       ? 'Guardar y generar factura'
-                      : 'Actualizar servicio'}
+                      : items.length > 1
+                        ? 'Actualizar y agregar servicios'
+                        : 'Actualizar servicio'}
                 </button>
               </div>
             </form>
