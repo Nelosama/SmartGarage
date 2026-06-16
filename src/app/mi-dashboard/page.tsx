@@ -20,7 +20,7 @@ export default async function ClientDashboardPage() {
 
   try {
     const cliente = await prisma.cliente.findUnique({
-      where: { id_usuario: parseInt(user.id_usuario) },
+      where: { id_usuario: Number(user.id_usuario) },
     })
 
     if (cliente) {
@@ -31,7 +31,9 @@ export default async function ClientDashboardPage() {
 
         prisma.ordenTrabajo.findMany({
           where: {
-            id_cliente: cliente.id_cliente,
+            vehiculo: {
+              id_cliente: cliente.id_cliente,
+            },
             estado_actual: {
               nombre_estado: {
                 notIn: ['Entregado', 'Cancelado'],
@@ -39,13 +41,22 @@ export default async function ClientDashboardPage() {
             },
           },
           include: {
-            vehiculo: true,
+            vehiculo: {
+              include: {
+                cliente: {
+                  include: {
+                    usuario: true,
+                  },
+                },
+              },
+            },
             estado_actual: true,
             mecanico: {
               include: {
                 usuario: true,
               },
             },
+            diagnostico: true,
             historial_estados: {
               include: {
                 estado: true,
@@ -64,7 +75,9 @@ export default async function ClientDashboardPage() {
 
         prisma.alertaMantenimiento.findMany({
           where: {
-            vehiculo: { id_cliente: cliente.id_cliente },
+            vehiculo: {
+              id_cliente: cliente.id_cliente,
+            },
             estado: 'Pendiente',
           },
           include: {
@@ -93,9 +106,30 @@ export default async function ClientDashboardPage() {
         }),
       ])
 
+      const alertasDesdeDiagnostico = orders
+        .filter((orden: any) => orden.diagnostico)
+        .filter((orden: any) => {
+          return !alerts.some((alerta: any) => alerta.id_orden_origen === orden.id_orden)
+        })
+        .map((orden: any) => ({
+          id_alerta: `diagnostico-${orden.id_orden}`,
+          es_alerta_diagnostico: true,
+          id_orden_origen: orden.id_orden,
+          estado: 'Pendiente',
+          mensaje: `Diagnóstico registrado: ${orden.diagnostico.falla_reportada}`,
+          vehiculo: orden.vehiculo,
+          servicio: {
+            nombre_servicio: 'Diagnóstico del mecánico',
+          },
+          orden_origen: {
+            ...orden,
+            diagnostico: orden.diagnostico,
+          },
+        }))
+
       myVehicles = vehiculos
       myActiveOrders = orders
-      myAlerts = alerts
+      myAlerts = [...alerts, ...alertasDesdeDiagnostico]
     }
   } catch (e) {
     console.error(e)
@@ -215,11 +249,13 @@ export default async function ClientDashboardPage() {
                   </p>
 
                   <p className="mt-1 text-xs font-bold text-slate-700">
-                    Servicio sugerido: {a.servicio?.nombre_servicio || 'Servicio no especificado'}
+                    Servicio sugerido:{' '}
+                    {a.servicio?.nombre_servicio || 'Servicio no especificado'}
                   </p>
 
                   <p className="mt-2 text-[10px] text-slate-400 font-bold uppercase">
-                    Estado actual: {a.orden_origen?.estado_actual?.nombre_estado || 'Sin estado registrado'}
+                    Estado actual:{' '}
+                    {a.orden_origen?.estado_actual?.nombre_estado || 'Sin estado registrado'}
                   </p>
 
                   {diagnostico ? (
