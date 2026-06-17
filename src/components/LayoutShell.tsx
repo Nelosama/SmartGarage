@@ -48,7 +48,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
     { name: 'Diagnósticos', href: '/diagnosticos', icon: Activity, roles: [1, 3] },
     { name: 'Servicios Realizados', href: '/servicios-realizados', icon: ClipboardList, roles: [1, 2, 3] },
     { name: 'Facturas', href: '/facturas', icon: FileText, roles: [1, 2, 4] },
-    { name: 'Alertas Mantenimiento', href: '/alertas', icon: AlertTriangle, roles: [1, 2, 4] },
+    { name: 'Alertas Mantenimiento', href: '/alertas', icon: AlertTriangle, roles: [1, 2, 3, 4] },
     { name: 'Catálogo Servicios', href: '/servicios', icon: Activity, roles: [1] },
     { name: 'Inventario Repuestos', href: '/repuestos', icon: Package, roles: [1] },
     { name: 'Equipo Mecánico', href: '/mecanicos', icon: Briefcase, roles: [1] },
@@ -57,7 +57,8 @@ export default function LayoutShell({ children }: LayoutShellProps) {
 
   const menuItems = useMemo(() => {
     if (!user) return []
-    return allMenuItems.filter(item => item.roles.includes(user.id_rol))
+    const roleId = Number(user.id_rol)
+    return allMenuItems.filter(item => item.roles.includes(roleId))
   }, [user, allMenuItems])
 
   const getPageTitle = () => {
@@ -99,7 +100,7 @@ export default function LayoutShell({ children }: LayoutShellProps) {
         }`}
       >
         <div className="flex h-16 items-center justify-between px-6 border-b border-slate-200">
-          <Link href={user?.id_rol === 4 ? '/mi-dashboard' : '/'} className="flex items-center gap-3 group" onClick={() => setSidebarOpen(false)}>
+          <Link href={Number(user?.id_rol) === 4 ? '/mi-dashboard' : '/'} className="flex items-center gap-3 group" onClick={() => setSidebarOpen(false)}>
             <div className="p-2.5 rounded-xl bg-orange-600 text-white shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform duration-200">
               <Wrench className="h-6 w-6" />
             </div>

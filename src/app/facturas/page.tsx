@@ -36,7 +36,7 @@ interface Orden {
 }
 
 export default function FacturasPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const user = session?.user as { id_rol: number; id_usuario: string; nombre: string } | null
   const [facturas, setFacturas] = useState<FacturaResumen[]>([])
   const [ordenes, setOrdenes] = useState<Orden[]>([])
@@ -62,6 +62,7 @@ export default function FacturasPage() {
   const fetchFacturas = useCallback(async () => {
     try {
       const res = await fetch('/api/facturas')
+      if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
       setFacturas(Array.isArray(data) ? data : [])
     } catch (error) {
@@ -74,6 +75,7 @@ export default function FacturasPage() {
   const fetchOrdenes = useCallback(async () => {
     try {
       const res = await fetch('/api/ordenes')
+      if (!res.ok) throw new Error('Failed to fetch')
       const data = await res.json()
       setOrdenes(Array.isArray(data) ? data : [])
     } catch (error) {
@@ -82,13 +84,19 @@ export default function FacturasPage() {
   }, [])
 
   useEffect(() => {
-    (async () => {
-      await fetchFacturas()
-      if (user?.id_rol === 1 || user?.id_rol === 2) {
-        await fetchOrdenes()
-      }
-    })()
-  }, [user, fetchFacturas, fetchOrdenes])
+    let mounted = true;
+    if (status === 'authenticated' && user) {
+      (async () => {
+        if (!mounted) return;
+        await fetchFacturas();
+        const roleId = Number(user.id_rol);
+        if (roleId === 1 || roleId === 2) {
+          await fetchOrdenes();
+        }
+      })();
+    }
+    return () => { mounted = false };
+  }, [status, user, fetchFacturas, fetchOrdenes])
 
   const filteredFacturas = useMemo(() => {
     return facturas.filter(f =>
@@ -207,6 +215,12 @@ export default function FacturasPage() {
     }
   }
 
+  if (status === 'loading') {
+    return <div className="p-8 text-center text-slate-400 font-bold animate-pulse">Cargando datos de sesión...</div>
+  }
+
+  const roleId = Number(user?.id_rol)
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -217,7 +231,7 @@ export default function FacturasPage() {
           </h1>
           <p className="text-slate-500 text-sm">Gestiona los pagos y comprobantes del taller.</p>
         </div>
-        {(user?.id_rol === 1 || user?.id_rol === 2) && (
+        {(roleId === 1 || roleId === 2) && (
           <button
             onClick={() => { resetForm(); setShowCreateModal(true); }}
             className="flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-orange-500/20"
@@ -252,7 +266,7 @@ export default function FacturasPage() {
                 <th className="px-6 py-4">Total</th>
                 <th className="px-6 py-4 text-center">Estado</th>
                 <th className="px-6 py-4">Método</th>
-                {(user?.id_rol === 1 || user?.id_rol === 2) && <th className="px-6 py-4 text-right">Acciones</th>}
+                {(roleId === 1 || roleId === 2) && <th className="px-6 py-4 text-right">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -285,7 +299,7 @@ export default function FacturasPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-slate-600 font-medium">{f.metodo_pago || 'No definido'}</td>
-                  {(user?.id_rol === 1 || user?.id_rol === 2) && (
+                  {(roleId === 1 || roleId === 2) && (
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button
@@ -296,7 +310,7 @@ export default function FacturasPage() {
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
-                        {user.id_rol === 1 && (
+                        {roleId === 1 && (
                           <button
                             onClick={() => { setCurrentFactura(f); setShowDeleteModal(true); }}
                             disabled={f.estado_pago === 'Pagado'}

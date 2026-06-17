@@ -15,15 +15,16 @@ export async function GET() {
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
     const user = session.user as AuthUser
+    const roleId = Number(user.id_rol)
 
-    if (user.id_rol === 1 || user.id_rol === 2) {
+    if (roleId === 1 || roleId === 2) {
       const facturas = await prisma.resumenFactura.findMany({
         orderBy: { fecha_emision: 'desc' },
       })
       return NextResponse.json(facturas)
     }
 
-    if (user.id_rol === 4) {
+    if (roleId === 4) {
       const cliente = await prisma.cliente.findUnique({
         where: { id_usuario: parseInt(user.id_usuario) },
       })
@@ -46,6 +47,10 @@ export async function GET() {
       return NextResponse.json([])
     }
 
+    if (roleId === 3) {
+      return NextResponse.json([])
+    }
+
     return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error desconocido'
@@ -59,7 +64,9 @@ export async function POST(request: Request) {
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
     const user = session.user as AuthUser
-    if (user.id_rol !== 1 && user.id_rol !== 2) {
+    const roleId = Number(user.id_rol)
+
+    if (roleId !== 1 && roleId !== 2) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

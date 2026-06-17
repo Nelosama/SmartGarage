@@ -1,18 +1,57 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Bell, AlertTriangle, CheckCircle, Car } from 'lucide-react'
+import { useSession } from 'next-auth/react'
+
+interface AlertaResumen {
+  id_alerta: number
+  mensaje: string
+  estado: string
+  fecha_objetivo: string | null
+  servicio?: {
+    nombre_servicio: string
+  } | null
+  vehiculo?: {
+    marca: string
+    modelo: string
+    placa: string
+  } | null
+  id_vehiculo: number
+}
 
 export default function AlertasPage() {
-  const [alertas, setAlertas] = useState<any[]>([])
+  const { status } = useSession()
+  const [alertas, setAlertas] = useState<AlertaResumen[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetch('/api/alertas_mantenimiento').then(res => res.json()).then(data => {
+  const fetchAlertas = useCallback(async () => {
+    try {
+      const res = await fetch('/api/alertas_mantenimiento')
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
       setAlertas(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error fetching alertas:', error)
+    } finally {
       setLoading(false)
-    })
+    }
   }, [])
+
+  useEffect(() => {
+    let mounted = true;
+    if (status === 'authenticated') {
+      (async () => {
+        if (!mounted) return;
+        await fetchAlertas();
+      })();
+    }
+    return () => { mounted = false };
+  }, [status, fetchAlertas])
+
+  if (status === 'loading') {
+    return <div className="p-8 text-center text-slate-400 font-bold animate-pulse">Cargando datos de sesión...</div>
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
