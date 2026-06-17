@@ -1,5 +1,4 @@
 'use client'
-
 import { useEffect, useMemo, useState } from 'react'
 import {
   Activity,
@@ -13,7 +12,6 @@ import {
   User,
   Wrench,
 } from 'lucide-react'
-
 const emptyForm = {
   id_orden: '',
   falla_reportada: '',
@@ -21,7 +19,6 @@ const emptyForm = {
   recomendacion: '',
   observaciones: '',
 }
-
 export default function DiagnosticosPage() {
   const [diagnosticos, setDiagnosticos] = useState<any[]>([])
   const [ordenes, setOrdenes] = useState<any[]>([])
@@ -29,24 +26,19 @@ export default function DiagnosticosPage() {
   const [submitting, setSubmitting] = useState(false)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
-
   const [modalOpen, setModalOpen] = useState(false)
   const [editingDiagnostico, setEditingDiagnostico] = useState<any | null>(null)
   const [form, setForm] = useState(emptyForm)
-
   const fetchData = async () => {
     try {
       setLoading(true)
       setError(null)
-
       const [diagnosticosRes, ordenesRes] = await Promise.all([
         fetch('/api/diagnosticos'),
         fetch('/api/ordenes'),
       ])
-
       const diagnosticosData = await diagnosticosRes.json()
       const ordenesData = await ordenesRes.json()
-
       setDiagnosticos(Array.isArray(diagnosticosData) ? diagnosticosData : [])
       setOrdenes(Array.isArray(ordenesData) ? ordenesData : [])
     } catch (err: any) {
@@ -55,18 +47,15 @@ export default function DiagnosticosPage() {
       setLoading(false)
     }
   }
-
   useEffect(() => {
     fetchData()
   }, [])
-
   const filteredDiagnosticos = useMemo(() => {
     return diagnosticos.filter((d) => {
       const orden = d.orden
       const vehiculo = orden?.vehiculo
       const cliente = vehiculo?.cliente?.usuario?.nombre || ''
       const mecanico = orden?.mecanico?.usuario?.nombre || ''
-
       const text = `
         ${d.id_orden}
         ${d.falla_reportada}
@@ -79,23 +68,19 @@ export default function DiagnosticosPage() {
         ${cliente}
         ${mecanico}
       `.toLowerCase()
-
       return text.includes(search.toLowerCase())
     })
   }, [diagnosticos, search])
-
   const selectedOrden = useMemo(() => {
     if (!form.id_orden) return null
     return ordenes.find((o) => Number(o.id_orden) === Number(form.id_orden)) || null
   }, [form.id_orden, ordenes])
-
   const openCreateModal = () => {
     setEditingDiagnostico(null)
     setForm(emptyForm)
     setError(null)
     setModalOpen(true)
   }
-
   const openEditModal = (diagnostico: any) => {
     setEditingDiagnostico(diagnostico)
     setForm({
@@ -108,7 +93,6 @@ export default function DiagnosticosPage() {
     setError(null)
     setModalOpen(true)
   }
-
   const closeModal = () => {
     if (submitting) return
     setModalOpen(false)
@@ -116,30 +100,23 @@ export default function DiagnosticosPage() {
     setForm(emptyForm)
     setError(null)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!form.id_orden) {
       setError('Debes seleccionar una orden')
       return
     }
-
     if (!form.falla_reportada.trim()) {
       setError('La falla reportada es requerida')
       return
     }
-
     try {
       setSubmitting(true)
       setError(null)
-
       const url = editingDiagnostico
         ? `/api/diagnosticos/${editingDiagnostico.id_diagnostico}`
         : '/api/diagnosticos'
-
       const method = editingDiagnostico ? 'PUT' : 'POST'
-
       const res = await fetch(url, {
         method,
         headers: {
@@ -153,13 +130,10 @@ export default function DiagnosticosPage() {
           observaciones: form.observaciones.trim() || null,
         }),
       })
-
       const data = await res.json()
-
       if (!res.ok) {
         throw new Error(data?.details || data?.error || 'Error al guardar diagnóstico')
       }
-
       await fetchData()
       closeModal()
     } catch (err: any) {
@@ -168,7 +142,6 @@ export default function DiagnosticosPage() {
       setSubmitting(false)
     }
   }
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -181,7 +154,6 @@ export default function DiagnosticosPage() {
             Registro de fallas y causas detectadas por orden.
           </p>
         </div>
-
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -193,7 +165,6 @@ export default function DiagnosticosPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-
           <button
             onClick={openCreateModal}
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-orange-600 text-white text-sm font-bold hover:bg-orange-700 transition-colors shadow-sm"
@@ -203,14 +174,12 @@ export default function DiagnosticosPage() {
           </button>
         </div>
       </div>
-
       {error && !modalOpen && (
         <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl p-3 flex items-center gap-2">
           <AlertCircle className="h-4 w-4" />
           {error}
         </div>
       )}
-
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
@@ -224,7 +193,6 @@ export default function DiagnosticosPage() {
                 <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
             </thead>
-
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
@@ -256,23 +224,18 @@ export default function DiagnosticosPage() {
                         {d.orden?.estado_actual?.nombre_estado || 'Sin estado'}
                       </p>
                     </td>
-
                     <td className="px-6 py-4 text-slate-700">
                       {d.falla_reportada || '-'}
                     </td>
-
                     <td className="px-6 py-4 text-slate-700">
                       {d.causa_detectada || '-'}
                     </td>
-
                     <td className="px-6 py-4 text-slate-700">
                       {d.recomendacion || '-'}
                     </td>
-
                     <td className="px-6 py-4 text-slate-700">
                       {d.observaciones || '-'}
                     </td>
-
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => openEditModal(d)}
@@ -289,7 +252,6 @@ export default function DiagnosticosPage() {
           </table>
         </div>
       </div>
-
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
           <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-200 max-h-[calc(100vh-2rem)] flex flex-col">
@@ -302,7 +264,6 @@ export default function DiagnosticosPage() {
                   Selecciona una orden y registra la falla detectada.
                 </p>
               </div>
-
               <button
                 onClick={closeModal}
                 className="p-2 rounded-xl hover:bg-slate-100 text-slate-500"
@@ -311,7 +272,6 @@ export default function DiagnosticosPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0">
               {error && (
                 <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl p-3 flex items-center gap-2">
@@ -319,12 +279,10 @@ export default function DiagnosticosPage() {
                   {error}
                 </div>
               )}
-
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                   Orden de Trabajo
                 </label>
-
                 <select
                   value={form.id_orden}
                   disabled={!!editingDiagnostico}
@@ -340,7 +298,6 @@ export default function DiagnosticosPage() {
                   ))}
                 </select>
               </div>
-
               {selectedOrden && (
                 <div className="grid gap-3 md:grid-cols-3 bg-slate-50 border border-slate-100 rounded-2xl p-4">
                   <div className="flex items-start gap-2">
@@ -357,7 +314,6 @@ export default function DiagnosticosPage() {
                       </p>
                     </div>
                   </div>
-
                   <div className="flex items-start gap-2">
                     <User className="h-4 w-4 text-orange-600 mt-0.5" />
                     <div>
@@ -369,7 +325,6 @@ export default function DiagnosticosPage() {
                       </p>
                     </div>
                   </div>
-
                   <div className="flex items-start gap-2">
                     <Wrench className="h-4 w-4 text-orange-600 mt-0.5" />
                     <div>
@@ -383,7 +338,6 @@ export default function DiagnosticosPage() {
                   </div>
                 </div>
               )}
-
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                   Falla Reportada
@@ -396,7 +350,6 @@ export default function DiagnosticosPage() {
                   placeholder="Ejemplo: El vehículo presenta ruido al frenar..."
                 />
               </div>
-
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                   Causa Detectada
@@ -409,7 +362,6 @@ export default function DiagnosticosPage() {
                   placeholder="Ejemplo: Pastillas de freno desgastadas..."
                 />
               </div>
-
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                   Recomendación
@@ -422,7 +374,6 @@ export default function DiagnosticosPage() {
                   placeholder="Ejemplo: Reemplazar pastillas y revisar discos..."
                 />
               </div>
-
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                   Observaciones
@@ -435,7 +386,6 @@ export default function DiagnosticosPage() {
                   placeholder="Observaciones adicionales..."
                 />
               </div>
-
               <div className="flex gap-3 pt-4 sticky bottom-0 bg-white border-t border-slate-100 -mx-6 -mb-6 px-6 py-4">
                 <button
                   type="button"
@@ -444,7 +394,6 @@ export default function DiagnosticosPage() {
                 >
                   Cancelar
                 </button>
-
                 <button
                   type="submit"
                   disabled={submitting}

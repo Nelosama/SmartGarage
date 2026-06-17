@@ -1,9 +1,7 @@
 'use client'
-
 import { useState, useEffect, useCallback } from 'react'
 import { Bell, AlertTriangle, CheckCircle, Car } from 'lucide-react'
 import { useSession } from 'next-auth/react'
-
 interface AlertaResumen {
   id_alerta: number
   mensaje: string
@@ -19,12 +17,10 @@ interface AlertaResumen {
   } | null
   id_vehiculo: number
 }
-
 export default function AlertasPage() {
   const { status } = useSession()
   const [alertas, setAlertas] = useState<AlertaResumen[]>([])
   const [loading, setLoading] = useState(true)
-
   const fetchAlertas = useCallback(async () => {
     try {
       const res = await fetch('/api/alertas_mantenimiento')
@@ -37,7 +33,6 @@ export default function AlertasPage() {
       setLoading(false)
     }
   }, [])
-
   useEffect(() => {
     let mounted = true;
     if (status === 'authenticated') {
@@ -48,11 +43,9 @@ export default function AlertasPage() {
     }
     return () => { mounted = false };
   }, [status, fetchAlertas])
-
   if (status === 'loading') {
     return <div className="p-8 text-center text-slate-400 font-bold animate-pulse">Cargando datos de sesión...</div>
   }
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -62,7 +55,6 @@ export default function AlertasPage() {
         </h1>
         <p className="text-slate-500 text-sm">Notificaciones preventivas basadas en el kilometraje.</p>
       </div>
-
       <div className="grid gap-4">
         {loading ? (
           <p className="text-center text-slate-400 py-12">Cargando alertas...</p>

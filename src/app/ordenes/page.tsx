@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect, useMemo } from 'react'
 import {
   Plus,
@@ -14,7 +13,6 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-
 interface Vehiculo {
   id_vehiculo: number
   placa: string
@@ -27,7 +25,6 @@ interface Vehiculo {
     }
   }
 }
-
 interface Mecanico {
   id_mecanico: number
   id_usuario?: number
@@ -36,12 +33,10 @@ interface Mecanico {
     nombre: string
   }
 }
-
 interface Estado {
   id_estado: number
   nombre_estado: string
 }
-
 interface Orden {
   id_orden: number
   id_cliente: number
@@ -59,19 +54,16 @@ interface Orden {
   estado_actual: Estado
   mecanico?: Mecanico
 }
-
 function toDateInputValue(dateValue?: string | null) {
   if (!dateValue) return ''
   const date = new Date(dateValue)
   if (isNaN(date.getTime())) return ''
   return date.toISOString().split('T')[0]
 }
-
 export default function OrdenesPage() {
   const { data: session } = useSession()
   const user = session?.user as { id_usuario?: string; id_rol?: number; name?: string } | undefined
   const id_rol = user?.id_rol ? Number(user.id_rol) : null
-
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [mecanicos, setMecanicos] = useState<Mecanico[]>([])
@@ -82,11 +74,9 @@ export default function OrdenesPage() {
   const [activeTab, setActiveTab] = useState<'todos' | 'Recibido' | 'En reparación' | 'Listo para entrega'>('todos')
   const [error, setError] = useState<string | null>(null)
   const ignoreError = error
-
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedOrden, setSelectedOrden] = useState<Orden | null>(null)
-
   const [motivo, setMotivo] = useState('')
   const [observaciones, setObservaciones] = useState('')
   const [estadoId, setEstadoId] = useState<string>('')
@@ -96,16 +86,12 @@ export default function OrdenesPage() {
   const [kilometraje, setKilometraje] = useState<number>(0)
   const [fechaIngreso, setFechaIngreso] = useState('')
   const [fechaEstimada, setFechaEstimada] = useState('')
-
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-
   const handleTakeOrder = async (orderId: number) => {
     if (!currentMecanico) return
-
     try {
       setLoading(true)
-
       const res = await fetch(`/api/ordenes/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -113,9 +99,7 @@ export default function OrdenesPage() {
           id_mecanico: currentMecanico.id_mecanico
         })
       })
-
       if (!res.ok) throw new Error('Error al tomar la orden')
-
       fetchOrders(search)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error desconocido'
@@ -124,16 +108,12 @@ export default function OrdenesPage() {
       setLoading(false)
     }
   }
-
   const fetchOrders = React.useCallback(async (query = '') => {
     try {
       setLoading(true)
-
       const ordURL = `/api/ordenes${query ? `?q=${encodeURIComponent(query)}` : ''}`
       const ordRes = await fetch(ordURL)
-
       if (!ordRes.ok) throw new Error('Error en servidor')
-
       setOrdenes(await ordRes.json())
       setError(null)
     } catch (err: unknown) {
@@ -143,7 +123,6 @@ export default function OrdenesPage() {
       setLoading(false)
     }
   }, [])
-
   const fetchMetadata = React.useCallback(async () => {
     try {
       const [vehRes, mecRes, estRes] = await Promise.all([
@@ -151,15 +130,12 @@ export default function OrdenesPage() {
         fetch('/api/mecanicos'),
         fetch('/api/estados_orden')
       ])
-
       const vehs = await vehRes.json()
       const mecs = await mecRes.json()
       const ests = await estRes.json()
-
       setVehiculos(vehs)
       setMecanicos(mecs)
       setEstados(ests)
-
       if (id_rol === 3 && user?.id_usuario) {
         const myMec = mecs.find((m: Mecanico) => Number(m.id_usuario) === parseInt(user.id_usuario || '0'))
         if (myMec) setCurrentMecanico(myMec)
@@ -168,29 +144,23 @@ export default function OrdenesPage() {
       console.error('Metadata fetch error:', err)
     }
   }, [id_rol, user?.id_usuario])
-
   useEffect(() => {
     let mounted = true
-
     ;(async () => {
       if (!mounted) return
       await fetchMetadata()
       await fetchOrders()
     })()
-
     return () => {
       mounted = false
     }
   }, [fetchMetadata, fetchOrders])
-
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchOrders(search)
     }, 300)
-
     return () => clearTimeout(timer)
   }, [search, fetchOrders])
-
   const openCreateModal = () => {
     setModalMode('create')
     setSelectedOrden(null)
@@ -206,7 +176,6 @@ export default function OrdenesPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const openEditModal = (orden: Orden) => {
     setModalMode('edit')
     setSelectedOrden(orden)
@@ -222,17 +191,13 @@ export default function OrdenesPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     try {
       setFormSubmitting(true)
-
       const url = modalMode === 'create' ? '/api/ordenes' : `/api/ordenes/${selectedOrden?.id_orden}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
       const selectedVeh = vehiculos.find(v => v.id_vehiculo === parseInt(vehiculoId))
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -249,9 +214,7 @@ export default function OrdenesPage() {
           fecha_estimada_entrega: fechaEstimada ? new Date(fechaEstimada).toISOString() : null
         })
       })
-
       if (!res.ok) throw new Error('Error al guardar')
-
       setIsModalOpen(false)
       fetchOrders(search)
     } catch (err: unknown) {
@@ -261,20 +224,16 @@ export default function OrdenesPage() {
       setFormSubmitting(false)
     }
   }
-
   const filteredOrdenes = useMemo(() => {
     return ordenes.filter(o => {
       const status = o.estado_actual.nombre_estado
-
       if (activeTab === 'todos') return true
       if (activeTab === 'Recibido') return ['Recibido', 'En espera'].includes(status)
       if (activeTab === 'En reparación') return ['En diagnostico', 'En reparacion', 'Esperando repuestos', 'En prueba'].includes(status)
       if (activeTab === 'Listo para entrega') return status === 'Listo para entrega'
-
       return status === activeTab
     })
   }, [ordenes, activeTab])
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -285,7 +244,6 @@ export default function OrdenesPage() {
           </h1>
           <p className="text-slate-500 text-sm">Control de diagnóstico y reparaciones en curso.</p>
         </div>
-
         {(id_rol === 1 || id_rol === 2) && (
           <button
             onClick={openCreateModal}
@@ -296,7 +254,6 @@ export default function OrdenesPage() {
           </button>
         )}
       </div>
-
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4">
         <div className="flex bg-slate-100 p-1 rounded-xl">
           {(['todos', 'Recibido', 'En reparación', 'Listo para entrega'] as const).map((tab) => (
@@ -311,7 +268,6 @@ export default function OrdenesPage() {
             </button>
           ))}
         </div>
-
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
@@ -323,7 +279,6 @@ export default function OrdenesPage() {
           />
         </div>
       </div>
-
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
         {loading ? (
           <div className="text-center py-12 text-slate-400">Cargando órdenes...</div>
@@ -338,7 +293,6 @@ export default function OrdenesPage() {
                 <div className="p-3 rounded-xl bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-600 transition-colors">
                   <Car className="h-6 w-6" />
                 </div>
-
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded tracking-wider">#{o.id_orden}</span>
@@ -350,14 +304,11 @@ export default function OrdenesPage() {
                       {o.prioridad}
                     </span>
                   </div>
-
                   <h3 className="font-bold text-slate-800 text-lg">{o.motivo_ingreso}</h3>
-
                   <div className="flex flex-col sm:flex-row sm:items-center gap-x-4 gap-y-1">
                     <p className="text-sm text-slate-500">
                       {o.vehiculo.marca} {o.vehiculo.modelo} • <span className="font-mono font-bold text-slate-700">{o.vehiculo.placa}</span>
                     </p>
-
                     <div className="flex items-center gap-1.5 text-xs">
                       {o.mecanico ? (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 font-semibold border border-blue-100">
@@ -372,7 +323,6 @@ export default function OrdenesPage() {
                       )}
                     </div>
                   </div>
-
                   {o.observaciones && (
                     <p className="mt-2 text-xs text-slate-500 italic">
                       Observación: {o.observaciones}
@@ -380,7 +330,6 @@ export default function OrdenesPage() {
                   )}
                 </div>
               </div>
-
               <div className="flex flex-wrap items-center gap-6 text-sm">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Cliente</span>
@@ -389,14 +338,12 @@ export default function OrdenesPage() {
                     {o.vehiculo.cliente.usuario.nombre}
                   </span>
                 </div>
-
                 <div className="flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Estado</span>
                   <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold mt-0.5">
                     {o.estado_actual.nombre_estado}
                   </span>
                 </div>
-
                 <div className="flex gap-2">
                   {id_rol === 3 && !o.id_mecanico && (
                     <button
@@ -408,7 +355,6 @@ export default function OrdenesPage() {
                       Tomar Orden
                     </button>
                   )}
-
                   {id_rol !== 4 && (
                     <button
                       onClick={() => openEditModal(o)}
@@ -418,7 +364,6 @@ export default function OrdenesPage() {
                       <Edit2 className="h-4 w-4" />
                     </button>
                   )}
-
                   <Link
                     href={`/servicios-realizados?ordenId=${o.id_orden}`}
                     className="p-2 hover:bg-orange-50 rounded-lg text-slate-400 hover:text-orange-600 transition-colors"
@@ -432,7 +377,6 @@ export default function OrdenesPage() {
           </div>
         ))}
       </div>
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-scale-in">
@@ -440,7 +384,6 @@ export default function OrdenesPage() {
               <h2 className="text-xl font-black text-slate-800">
                 {modalMode === 'create' ? 'Nueva Orden' : 'Editar Orden'}
               </h2>
-
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 hover:bg-slate-100 rounded-full transition-colors"
@@ -448,14 +391,12 @@ export default function OrdenesPage() {
                 <X className="h-5 w-5 text-slate-400" />
               </button>
             </div>
-
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {formError && (
                 <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-100">
                   {formError}
                 </div>
               )}
-
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label htmlFor="motivo" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -470,7 +411,6 @@ export default function OrdenesPage() {
                     onChange={(e) => setMotivo(e.target.value)}
                   />
                 </div>
-
                 <div>
                   <label htmlFor="vehiculo" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Vehículo
@@ -488,7 +428,6 @@ export default function OrdenesPage() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label htmlFor="prioridad" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Prioridad
@@ -504,7 +443,6 @@ export default function OrdenesPage() {
                     <option value="Alta">Alta</option>
                   </select>
                 </div>
-
                 <div>
                   <label htmlFor="kilometraje" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Kilometraje
@@ -517,7 +455,6 @@ export default function OrdenesPage() {
                     onChange={(e) => setKilometraje(Number(e.target.value))}
                   />
                 </div>
-
                 <div>
                   <label htmlFor="mecanico" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Mecánico Asignado
@@ -536,7 +473,6 @@ export default function OrdenesPage() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label htmlFor="estado" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Estado
@@ -554,7 +490,6 @@ export default function OrdenesPage() {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label htmlFor="fechaIngreso" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Fecha de Ingreso
@@ -567,7 +502,6 @@ export default function OrdenesPage() {
                     onChange={(e) => setFechaIngreso(e.target.value)}
                   />
                 </div>
-
                 <div>
                   <label htmlFor="fechaEstimada" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Fecha Estimada de Entrega
@@ -580,7 +514,6 @@ export default function OrdenesPage() {
                     onChange={(e) => setFechaEstimada(e.target.value)}
                   />
                 </div>
-
                 <div className="md:col-span-2">
                   <label htmlFor="observaciones" className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Observaciones del mecánico
@@ -594,7 +527,6 @@ export default function OrdenesPage() {
                   />
                 </div>
               </div>
-
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
@@ -603,7 +535,6 @@ export default function OrdenesPage() {
                 >
                   Cancelar
                 </button>
-
                 <button
                   type="submit"
                   disabled={formSubmitting}

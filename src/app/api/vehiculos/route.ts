@@ -3,21 +3,19 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-
-    const user = session.user as any
+    const user = session.user as { id_rol: number; id_usuario: string }
     const { searchParams } = new URL(request.url)
     const clienteIdParam = searchParams.get('clienteId')
     const query = searchParams.get('q') || ''
-
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const skip = (page - 1) * limit
     const whereClause: Prisma.VehiculoWhereInput = {}
-
-    // Role-based filtering
-    if (user.id_rol === 4) { // Cliente
+    if (user.id_rol === 4) {
       const cliente = await prisma.cliente.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
       if (cliente) {
         whereClause.id_cliente = cliente.id_cliente
@@ -30,7 +28,6 @@ export async function GET(request: Request) {
         whereClause.id_cliente = id_cliente
       }
     }
-
     if (query) {
       whereClause.OR = [
         { placa: { contains: query, mode: 'insensitive' } },
@@ -45,19 +42,34 @@ export async function GET(request: Request) {
         }
       ]
     }
-
+    /* OPTIMIZACIÓN: Implementación de paginación y selección estricta de campos para reducir carga de red */
     const vehiculos = await prisma.vehiculo.findMany({
       where: whereClause,
-      include: {
+      take: limit,
+      skip: skip,
+      select: {
+        id_vehiculo: true,
+        placa: true,
+        marca: true,
+        modelo: true,
+        anio: true,
+        color: true,
+        vin: true,
+        tipo_combustible: true,
+        kilometraje_actual: true,
+        id_cliente: true,
         cliente: {
-          include: {
-            usuario: true
+          select: {
+            usuario: {
+              select: {
+                nombre: true
+              }
+            }
           }
-        },
+        }
       },
       orderBy: { placa: 'asc' },
     })
-
     return NextResponse.json(vehiculos)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
@@ -68,39 +80,30 @@ export async function GET(request: Request) {
     }, { status: 500 })
   }
 }
-
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-
-    const user = session.user as any
+    const user = session.user as { id_rol: number; id_usuario: string }
     if (user.id_rol !== 1 && user.id_rol !== 2) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
-
     const body = await request.json()
     const { placa, marca, modelo, anio, clienteId, color, vin, tipo_combustible, kilometraje_actual } = body
-
     if (!placa || !marca || !modelo || anio === undefined || clienteId === undefined) {
       return NextResponse.json({ error: 'Todos los campos son obligatorios' }, { status: 400 })
     }
-
     const parsedAnio = parseInt(anio, 10)
     const parsedClienteId = parseInt(clienteId, 10)
-
     if (isNaN(parsedAnio) || isNaN(parsedClienteId)) {
       return NextResponse.json({ error: 'Año o Cliente ID inválidos' }, { status: 400 })
     }
-
     const existing = await prisma.vehiculo.findUnique({
       where: { placa },
     })
-
     if (existing) {
       return NextResponse.json({ error: 'Ya existe un vehículo registrado con esta placa' }, { status: 400 })
     }
-
     const vehiculo = await prisma.vehiculo.create({
       data: {
         placa,
@@ -121,7 +124,6 @@ export async function POST(request: Request) {
         },
       },
     })
-
     return NextResponse.json(vehiculo, { status: 201 })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'

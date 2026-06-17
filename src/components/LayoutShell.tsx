@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -20,11 +19,9 @@ import {
   AlertTriangle,
   UserCog
 } from 'lucide-react'
-
 interface LayoutShellProps {
   children: React.ReactNode
 }
-
 interface AuthUser {
   id_rol: number
   id_usuario: string
@@ -32,13 +29,11 @@ interface AuthUser {
   name?: string | null
   nombre_rol?: string | null
 }
-
 export default function LayoutShell({ children }: LayoutShellProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: session, status } = useSession()
   const user = session?.user as AuthUser | null
-
   const allMenuItems = useMemo(() => [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: [1, 2, 3] },
     { name: 'Mi Dashboard', href: '/mi-dashboard', icon: LayoutDashboard, roles: [4] },
@@ -54,26 +49,21 @@ export default function LayoutShell({ children }: LayoutShellProps) {
     { name: 'Equipo Mecánico', href: '/mecanicos', icon: Briefcase, roles: [1] },
     { name: 'Usuarios', href: '/usuarios', icon: UserCog, roles: [1] },
   ], [])
-
   const menuItems = useMemo(() => {
     if (!user) return []
     const roleId = Number(user.id_rol)
     return allMenuItems.filter(item => item.roles.includes(roleId))
   }, [user, allMenuItems])
-
   const getPageTitle = () => {
     const item = allMenuItems.find(m => m.href === pathname || (m.href !== '/' && pathname.startsWith(m.href)))
     return item ? item.name : 'SmartGarage'
   }
-
   const handleLogout = () => {
     signOut({ callbackUrl: '/login' })
   }
-
   if (pathname === '/login') {
     return <>{children}</>
   }
-
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3 animate-pulse">
@@ -84,7 +74,6 @@ export default function LayoutShell({ children }: LayoutShellProps) {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex transition-colors duration-300">
       {sidebarOpen && (
@@ -93,7 +82,6 @@ export default function LayoutShell({ children }: LayoutShellProps) {
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
       <aside 
         className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out md:translate-x-0 md:static ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -122,14 +110,12 @@ export default function LayoutShell({ children }: LayoutShellProps) {
             <X className="h-5 w-5" />
           </button>
         </div>
-
         <nav className="flex-1 space-y-1.5 px-4 py-6 overflow-y-auto max-h-[calc(100vh-140px)]">
           {menuItems.map((item) => {
             const Icon = item.icon
             const isActive = item.href === '/' 
               ? pathname === '/' 
               : (pathname === item.href || pathname.startsWith(item.href + '/'))
-
             return (
               <Link
                 key={item.href}
@@ -152,7 +138,6 @@ export default function LayoutShell({ children }: LayoutShellProps) {
             )
           })}
         </nav>
-
         <div className="p-4 border-t border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-600 text-sm uppercase">
@@ -175,7 +160,6 @@ export default function LayoutShell({ children }: LayoutShellProps) {
           </div>
         </div>
       </aside>
-
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/80 backdrop-blur px-6">
           <div className="flex items-center gap-4">
@@ -191,11 +175,9 @@ export default function LayoutShell({ children }: LayoutShellProps) {
               {getPageTitle()}
             </h1>
           </div>
-          
           <div className="flex items-center gap-3">
           </div>
         </header>
-
         <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
           {children}
         </main>

@@ -2,7 +2,6 @@ import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
 import { NextAuthOptions } from 'next-auth'
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -13,9 +12,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.correo || !credentials?.password) return null
-
         try {
-          // Direct SQL query as requested
           const users = await prisma.$queryRaw<any[]>`
             SELECT u.id_usuario, u.nombre, u.correo, u.id_rol, r.nombre_rol
             FROM usuarios u
@@ -70,10 +67,9 @@ export const authOptions: NextAuthOptions = {
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        maxAge: undefined, // Ensure it behaves as a session cookie if possible
+        maxAge: undefined,
       },
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
 }
-

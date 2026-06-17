@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -18,7 +17,6 @@ export async function GET(
     return NextResponse.json({ error: 'Error al obtener alerta', details: error.message }, { status: 500 })
   }
 }
-
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -28,7 +26,6 @@ export async function PUT(
     const id = parseInt(resolvedParams.id, 10)
     const body = await request.json()
     const { id_servicio, kilometraje_referencia, kilometraje_objetivo, fecha_objetivo, mensaje, estado } = body
-
     const alerta = await prisma.alertaMantenimiento.update({
       where: { id_alerta: id },
       data: {
@@ -45,7 +42,6 @@ export async function PUT(
     return NextResponse.json({ error: 'Error al actualizar alerta', details: error.message }, { status: 500 })
   }
 }
-
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

@@ -1,8 +1,6 @@
 'use client'
-
 import React, { useState } from 'react'
 import { Lock, ShieldCheck, Loader2, AlertCircle } from 'lucide-react'
-
 export default function ChangePasswordSection() {
   const [passwordActual, setPasswordActual] = useState('')
   const [passwordNueva, setPasswordNueva] = useState('')
@@ -10,22 +8,18 @@ export default function ChangePasswordSection() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setSuccess(null)
-
     if (passwordNueva !== confirmarNueva) {
       setError('Las nuevas contraseñas no coinciden')
       return
     }
-
     if (passwordNueva.length < 4) {
         setError('La nueva contraseña debe tener al menos 4 caracteres')
         return
     }
-
     setLoading(true)
     try {
       const res = await fetch('/api/usuarios/cambiar-password', {
@@ -33,13 +27,10 @@ export default function ChangePasswordSection() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ passwordActual, passwordNueva })
       })
-
       const data = await res.json()
-
       if (!res.ok) {
         throw new Error(data.error || 'Error al cambiar la contraseña')
       }
-
       setSuccess('Tu contraseña ha sido actualizada correctamente.')
       setPasswordActual('')
       setPasswordNueva('')
@@ -51,7 +42,6 @@ export default function ChangePasswordSection() {
       setLoading(false)
     }
   }
-
   return (
     <form onSubmit={handleSubmit} className="max-w-md space-y-4">
       {error && (
@@ -64,7 +54,6 @@ export default function ChangePasswordSection() {
           <ShieldCheck className="h-4 w-4" /> {success}
         </div>
       )}
-
       <div className="space-y-1.5">
         <label className="text-[10px] font-bold text-slate-500 uppercase">Contraseña Actual</label>
         <div className="relative">
@@ -78,7 +67,6 @@ export default function ChangePasswordSection() {
           />
         </div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold text-slate-500 uppercase">Nueva Contraseña</label>
@@ -101,7 +89,6 @@ export default function ChangePasswordSection() {
           />
         </div>
       </div>
-
       <button
         type="submit"
         disabled={loading}

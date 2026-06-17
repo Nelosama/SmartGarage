@@ -5,24 +5,20 @@ import { prisma } from '@/lib/prisma'
 import { Car, ClipboardList, Bell, History, Lock, Receipt } from 'lucide-react'
 import ChangePasswordSection from '@/components/ChangePasswordSection'
 import { formatCurrency, formatDate } from '@/lib/utils'
-
 export const dynamic = 'force-dynamic'
-
 interface Invoice {
   id_factura: number
   numero_factura: string
-  fecha_emision: string
+  fecha_emision: Date | string | null
   total: number
   estado_pago: string
   metodo_pago: string | null
 }
-
 interface AuthUser {
   id_rol: number
   id_usuario: string
   nombre: string
 }
-
 interface Alerta {
   id_alerta: string | number
   vehiculo: { marca: string; modelo: string; placa: string }
@@ -35,7 +31,6 @@ interface Alerta {
   } | null
   mensaje?: string | null
 }
-
 interface OrdenSimplificada {
   id_orden: number
   diagnostico?: {
@@ -47,7 +42,6 @@ interface OrdenSimplificada {
   vehiculo: { marca: string; modelo: string; placa: string }
   estado_actual: { nombre_estado: string }
 }
-
 interface FullOrder {
   id_orden: number
   motivo_ingreso: string
@@ -56,7 +50,6 @@ interface FullOrder {
   estado_actual: { nombre_estado: string }
   historial_estados: { comentario?: string | null }[]
 }
-
 interface FullAlerta {
   id_alerta: string | number
   vehiculo: { marca: string; modelo: string; placa: string }
@@ -73,36 +66,29 @@ interface FullAlerta {
   } | null
   mensaje?: string | null
 }
-
 export default async function ClientDashboardPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
-
   const user = session.user as AuthUser
   if (user.id_rol !== 4) redirect('/')
-
   let myVehicles: { id_vehiculo: number; marca: string; modelo: string; placa: string }[] = []
   let myActiveOrders: FullOrder[] = []
   let myAlerts: FullAlerta[] = []
   let myInvoices: Invoice[] = []
-
   try {
     const cliente = await prisma.cliente.findUnique({
       where: { id_usuario: Number(user.id_usuario) },
     })
-
     if (cliente) {
       const ordersForInvoices = await prisma.ordenTrabajo.findMany({
         where: { id_cliente: cliente.id_cliente },
         select: { id_orden: true }
       })
       const orderIds = ordersForInvoices.map(o => o.id_orden)
-
       const [vehiculos, orders, alerts, invoices] = await Promise.all([
         prisma.vehiculo.findMany({
           where: { id_cliente: cliente.id_cliente },
         }),
-
         prisma.ordenTrabajo.findMany({
           where: {
             vehiculo: {
@@ -146,7 +132,6 @@ export default async function ClientDashboardPage() {
             fecha_ingreso: 'desc',
           },
         }),
-
         prisma.alertaMantenimiento.findMany({
           where: {
             vehiculo: {
@@ -178,7 +163,6 @@ export default async function ClientDashboardPage() {
             fecha_generada: 'desc',
           },
         }),
-
         prisma.resumenFactura.findMany({
           where: {
             id_orden: {
@@ -186,9 +170,8 @@ export default async function ClientDashboardPage() {
             }
           },
           orderBy: { fecha_emision: 'desc' }
-        }) as Promise<Invoice[]>
+        }) as unknown as Promise<Invoice[]>
       ])
-
       const alertasDesdeDiagnostico = (orders as unknown as OrdenSimplificada[])
         .filter((orden) => orden.diagnostico)
         .filter((orden) => {
@@ -209,7 +192,6 @@ export default async function ClientDashboardPage() {
             diagnostico: orden.diagnostico,
           },
         }))
-
       myVehicles = vehiculos
       myActiveOrders = orders as unknown as FullOrder[]
       myAlerts = [...(alerts as unknown as FullAlerta[]), ...(alertasDesdeDiagnostico as unknown as FullAlerta[])]
@@ -218,7 +200,6 @@ export default async function ClientDashboardPage() {
   } catch (e) {
     console.error(e)
   }
-
   return (
     <div className="space-y-8 animate-fade-in">
       <div className="bg-orange-600 rounded-3xl p-8 text-white shadow-xl shadow-orange-500/20">
@@ -227,7 +208,6 @@ export default async function ClientDashboardPage() {
           Bienvenido, {user.nombre}. Aquí puedes ver el estado de tus vehículos.
         </p>
       </div>
-
       <div className="grid gap-6 md:grid-cols-3">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="p-4 rounded-xl bg-orange-50 text-orange-600">
@@ -238,7 +218,6 @@ export default async function ClientDashboardPage() {
             <h3 className="text-3xl font-black">{myVehicles.length}</h3>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="p-4 rounded-xl bg-blue-50 text-blue-600">
             <ClipboardList />
@@ -248,7 +227,6 @@ export default async function ClientDashboardPage() {
             <h3 className="text-3xl font-black">{myActiveOrders.length}</h3>
           </div>
         </div>
-
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="p-4 rounded-xl bg-red-50 text-red-600">
             <Bell />
@@ -259,7 +237,6 @@ export default async function ClientDashboardPage() {
           </div>
         </div>
       </div>
-
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
@@ -283,7 +260,7 @@ export default async function ClientDashboardPage() {
                 {myInvoices.map((inv) => (
                   <tr key={inv.id_factura} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-bold text-slate-800">{inv.numero_factura}</td>
-                    <td className="px-4 py-3 text-slate-500">{formatDate(inv.fecha_emision)}</td>
+                    <td className="px-4 py-3 text-slate-500">{inv.fecha_emision ? formatDate(inv.fecha_emision) : '---'}</td>
                     <td className="px-4 py-3 font-black text-orange-600">{formatCurrency(inv.total)}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
@@ -308,7 +285,6 @@ export default async function ClientDashboardPage() {
             </table>
           </div>
         </div>
-
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -316,7 +292,6 @@ export default async function ClientDashboardPage() {
               Órdenes en Curso
             </h3>
           </div>
-
           <div className="divide-y divide-slate-100">
             {myActiveOrders.map((o) => (
               <div key={o.id_orden} className="p-4 hover:bg-slate-50 transition-colors">
@@ -325,27 +300,22 @@ export default async function ClientDashboardPage() {
                     <p className="font-bold text-slate-800">
                       {o.vehiculo.marca} {o.vehiculo.modelo}
                     </p>
-
                     <p className="text-xs text-slate-500">
                       Placa: {o.vehiculo.placa}
                     </p>
-
                     {o.mecanico?.usuario?.nombre && (
                       <p className="text-xs text-slate-500 mt-1">
                         Mecánico asignado: {o.mecanico.usuario.nombre}
                       </p>
                     )}
                   </div>
-
                   <span className="px-2 py-1 rounded-full bg-orange-100 text-orange-700 text-[10px] font-bold uppercase">
                     {o.estado_actual.nombre_estado}
                   </span>
                 </div>
-
                 <p className="mt-2 text-sm text-slate-600 italic">
                   &quot;{o.motivo_ingreso}&quot;
                 </p>
-
                 {o.historial_estados?.[0]?.comentario && (
                   <p className="mt-2 text-xs text-slate-500">
                     Última actualización: {o.historial_estados[0].comentario}
@@ -353,7 +323,6 @@ export default async function ClientDashboardPage() {
                 )}
               </div>
             ))}
-
             {myActiveOrders.length === 0 && (
               <p className="p-8 text-center text-slate-400">
                 No tienes órdenes activas en este momento.
@@ -361,7 +330,6 @@ export default async function ClientDashboardPage() {
             )}
           </div>
         </div>
-
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
             <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -369,52 +337,43 @@ export default async function ClientDashboardPage() {
               Alertas de Mantenimiento
             </h3>
           </div>
-
           <div className="divide-y divide-slate-100">
             {myAlerts.map((a) => {
               const diagnostico = a.orden_origen?.diagnostico
-
               return (
                 <div key={a.id_alerta} className="p-4 hover:bg-red-50 transition-colors">
                   <p className="text-xs text-slate-600">
                     {a.vehiculo.marca} {a.vehiculo.modelo} ({a.vehiculo.placa})
                   </p>
-
                   <p className="mt-1 text-xs font-bold text-slate-700">
                     Servicio sugerido:{' '}
                     {a.servicio?.nombre_servicio || 'Servicio no especificado'}
                   </p>
-
                   <p className="mt-2 text-[10px] text-slate-400 font-bold uppercase">
                     Estado actual:{' '}
                     {a.orden_origen?.estado_actual?.nombre_estado || 'Sin estado registrado'}
                   </p>
-
                   {diagnostico ? (
                     <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs">
                       <p className="font-black text-blue-700 uppercase mb-1">
                         Diagnóstico relacionado
                       </p>
-
                       <p className="text-slate-700">
                         <span className="font-bold">Falla reportada:</span>{' '}
                         {diagnostico.falla_reportada}
                       </p>
-
                       {diagnostico.causa_detectada && (
                         <p className="text-slate-600 mt-1">
                           <span className="font-bold">Causa detectada:</span>{' '}
                           {diagnostico.causa_detectada}
                         </p>
                       )}
-
                       {diagnostico.recomendacion && (
                         <p className="text-slate-600 mt-1">
                           <span className="font-bold">Recomendación:</span>{' '}
                           {diagnostico.recomendacion}
                         </p>
                       )}
-
                       {diagnostico.observaciones && (
                         <p className="text-slate-500 mt-1">
                           <span className="font-bold">Observaciones:</span>{' '}
@@ -432,7 +391,6 @@ export default async function ClientDashboardPage() {
                 </div>
               )
             })}
-
             {myAlerts.length === 0 && (
               <p className="p-8 text-center text-slate-400">
                 No tienes alertas pendientes.
@@ -441,13 +399,11 @@ export default async function ClientDashboardPage() {
           </div>
         </div>
       </div>
-
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
         <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-6">
           <Lock className="h-5 w-5 text-orange-600" />
           Configuración de Seguridad
         </h3>
-
         <ChangePasswordSection />
       </div>
     </div>
