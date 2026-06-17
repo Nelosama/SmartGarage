@@ -108,11 +108,13 @@ export default function FacturasPage() {
 
   // Recalcular total automáticamente
   useEffect(() => {
-    const total = Number(formData.subtotal_servicios) +
-                  Number(formData.subtotal_repuestos) +
-                  Number(formData.impuesto) -
-                  Number(formData.descuento)
-    setFormData(prev => ({ ...prev, total: total > 0 ? total : 0 }))
+    (async () => {
+      const total = Number(formData.subtotal_servicios) +
+                    Number(formData.subtotal_repuestos) +
+                    Number(formData.impuesto) -
+                    Number(formData.descuento)
+      setFormData(prev => ({ ...prev, total: total > 0 ? total : 0 }))
+    })()
   }, [formData.subtotal_servicios, formData.subtotal_repuestos, formData.impuesto, formData.descuento])
 
   const filteredFacturas = useMemo(() => {
