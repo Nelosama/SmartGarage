@@ -2,21 +2,89 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
-import { Car, ClipboardList, Bell, History, Lock } from 'lucide-react'
+import { Car, ClipboardList, Bell, History, Lock, Receipt } from 'lucide-react'
 import ChangePasswordSection from '@/components/ChangePasswordSection'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
+
+interface Invoice {
+  id_factura: number
+  numero_factura: string
+  fecha_emision: string
+  total: number
+  estado_pago: string
+  metodo_pago: string | null
+}
+
+interface AuthUser {
+  id_rol: number
+  id_usuario: string
+  nombre: string
+}
+
+interface Alerta {
+  id_alerta: string | number
+  vehiculo: { marca: string; modelo: string; placa: string }
+  id_orden_origen: number | null
+  diagnostico?: {
+    falla_reportada: string
+    causa_detectada?: string | null
+    recomendacion?: string | null
+    observaciones?: string | null
+  } | null
+  mensaje?: string | null
+}
+
+interface OrdenSimplificada {
+  id_orden: number
+  diagnostico?: {
+    falla_reportada: string
+    causa_detectada?: string | null
+    recomendacion?: string | null
+    observaciones?: string | null
+  } | null
+  vehiculo: { marca: string; modelo: string; placa: string }
+  estado_actual: { nombre_estado: string }
+}
+
+interface FullOrder {
+  id_orden: number
+  motivo_ingreso: string
+  vehiculo: { marca: string; modelo: string; placa: string }
+  mecanico?: { usuario: { nombre: string } } | null
+  estado_actual: { nombre_estado: string }
+  historial_estados: { comentario?: string | null }[]
+}
+
+interface FullAlerta {
+  id_alerta: string | number
+  vehiculo: { marca: string; modelo: string; placa: string }
+  servicio?: { nombre_servicio: string } | null
+  orden_origen?: {
+    estado_actual?: { nombre_estado: string } | null
+    diagnostico?: {
+      falla_reportada: string
+      causa_detectada?: string | null
+      recomendacion?: string | null
+      observaciones?: string | null
+    } | null
+    observaciones?: string | null
+  } | null
+  mensaje?: string | null
+}
 
 export default async function ClientDashboardPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
 
-  const user = session.user as any
+  const user = session.user as AuthUser
   if (user.id_rol !== 4) redirect('/')
 
-  let myVehicles: any[] = []
-  let myActiveOrders: any[] = []
-  let myAlerts: any[] = []
+  let myVehicles: { id_vehiculo: number; marca: string; modelo: string; placa: string }[] = []
+  let myActiveOrders: FullOrder[] = []
+  let myAlerts: FullAlerta[] = []
+  let myInvoices: Invoice[] = []
 
   try {
     const cliente = await prisma.cliente.findUnique({
@@ -24,7 +92,13 @@ export default async function ClientDashboardPage() {
     })
 
     if (cliente) {
-      const [vehiculos, orders, alerts] = await Promise.all([
+      const ordersForInvoices = await prisma.ordenTrabajo.findMany({
+        where: { id_cliente: cliente.id_cliente },
+        select: { id_orden: true }
+      })
+      const orderIds = ordersForInvoices.map(o => o.id_orden)
+
+      const [vehiculos, orders, alerts, invoices] = await Promise.all([
         prisma.vehiculo.findMany({
           where: { id_cliente: cliente.id_cliente },
         }),
@@ -104,19 +178,28 @@ export default async function ClientDashboardPage() {
             fecha_generada: 'desc',
           },
         }),
+
+        prisma.resumenFactura.findMany({
+          where: {
+            id_orden: {
+              in: orderIds
+            }
+          },
+          orderBy: { fecha_emision: 'desc' }
+        }) as Promise<Invoice[]>
       ])
 
-      const alertasDesdeDiagnostico = orders
-        .filter((orden: any) => orden.diagnostico)
-        .filter((orden: any) => {
-          return !alerts.some((alerta: any) => alerta.id_orden_origen === orden.id_orden)
+      const alertasDesdeDiagnostico = (orders as unknown as OrdenSimplificada[])
+        .filter((orden) => orden.diagnostico)
+        .filter((orden) => {
+          return !(alerts as unknown as Alerta[]).some((alerta) => alerta.id_orden_origen === orden.id_orden)
         })
-        .map((orden: any) => ({
+        .map((orden) => ({
           id_alerta: `diagnostico-${orden.id_orden}`,
           es_alerta_diagnostico: true,
           id_orden_origen: orden.id_orden,
           estado: 'Pendiente',
-          mensaje: `Diagnóstico registrado: ${orden.diagnostico.falla_reportada}`,
+          mensaje: `Diagnóstico registrado: ${orden.diagnostico?.falla_reportada}`,
           vehiculo: orden.vehiculo,
           servicio: {
             nombre_servicio: 'Diagnóstico del mecánico',
@@ -128,8 +211,9 @@ export default async function ClientDashboardPage() {
         }))
 
       myVehicles = vehiculos
-      myActiveOrders = orders
-      myAlerts = [...alerts, ...alertasDesdeDiagnostico]
+      myActiveOrders = orders as unknown as FullOrder[]
+      myAlerts = [...(alerts as unknown as FullAlerta[]), ...(alertasDesdeDiagnostico as unknown as FullAlerta[])]
+      myInvoices = invoices
     }
   } catch (e) {
     console.error(e)
@@ -178,6 +262,54 @@ export default async function ClientDashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-orange-600" />
+              Mis Facturas
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                  <th className="px-4 py-3">Factura</th>
+                  <th className="px-4 py-3">Fecha</th>
+                  <th className="px-4 py-3">Total</th>
+                  <th className="px-4 py-3">Estado</th>
+                  <th className="px-4 py-3">Método</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {myInvoices.map((inv) => (
+                  <tr key={inv.id_factura} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3 font-bold text-slate-800">{inv.numero_factura}</td>
+                    <td className="px-4 py-3 text-slate-500">{formatDate(inv.fecha_emision)}</td>
+                    <td className="px-4 py-3 font-black text-orange-600">{formatCurrency(inv.total)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                        inv.estado_pago === 'Pagado' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                        inv.estado_pago === 'Pendiente' ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                        'bg-red-50 text-red-700 border-red-100'
+                      }`}>
+                        {inv.estado_pago}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-600 font-medium">{inv.metodo_pago || '---'}</td>
+                  </tr>
+                ))}
+                {myInvoices.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400 italic">
+                      No tienes facturas generadas.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-bold text-slate-800 flex items-center gap-2">
               <History className="h-5 w-5 text-orange-600" />
@@ -211,7 +343,7 @@ export default async function ClientDashboardPage() {
                 </div>
 
                 <p className="mt-2 text-sm text-slate-600 italic">
-                  "{o.motivo_ingreso}"
+                  &quot;{o.motivo_ingreso}&quot;
                 </p>
 
                 {o.historial_estados?.[0]?.comentario && (
@@ -292,8 +424,7 @@ export default async function ClientDashboardPage() {
                     </div>
                   ) : (
                     <p className="mt-1 text-xs text-slate-500">
-                      {a.orden_origen?.historial_estados?.[0]?.comentario ||
-                        a.orden_origen?.observaciones ||
+                      {a.orden_origen?.observaciones ||
                         a.mensaje ||
                         'Sin observaciones registradas'}
                     </p>

@@ -4,15 +4,21 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Prisma } from '@prisma/client'
 
+interface AuthUser {
+  id_rol: number
+  id_usuario: string
+}
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const user = session.user as any
+    const user = session.user as AuthUser
+    const roleId = Number(user.id_rol)
     const whereClause: Prisma.AlertaMantenimientoWhereInput = {}
 
-    if (user.id_rol === 4) {
+    if (roleId === 4) {
       const cliente = await prisma.cliente.findUnique({
         where: { id_usuario: parseInt(user.id_usuario) },
       })
@@ -23,6 +29,10 @@ export async function GET() {
         return NextResponse.json([])
       }
     }
+
+    // Role 3 (Mechanic) also sees all alerts in this module usually, but we filter if needed.
+    // Given the prompt "Mechanic: define if they see alerts or not",
+    // Usually mechanics should see them to know what's pending.
 
     const alertas = await prisma.alertaMantenimiento.findMany({
       where: whereClause,
@@ -36,9 +46,10 @@ export async function GET() {
     })
 
     return NextResponse.json(alertas)
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json(
-      { error: 'Error al obtener alertas', details: error.message },
+      { error: 'Error al obtener alertas', details: message },
       { status: 500 }
     )
   }
@@ -49,8 +60,10 @@ export async function POST(request: Request) {
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-    const user = session.user as any
-    if (user.id_rol !== 1 && user.id_rol !== 2) {
+    const user = session.user as AuthUser
+    const roleId = Number(user.id_rol)
+
+    if (roleId !== 1 && roleId !== 2) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 
@@ -87,9 +100,10 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(alerta, { status: 201 })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Error desconocido'
     return NextResponse.json(
-      { error: 'Error al crear alerta', details: error.message },
+      { error: 'Error al crear alerta', details: message },
       { status: 500 }
     )
   }
