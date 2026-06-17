@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import {
@@ -15,7 +14,6 @@ import {
   AlertCircle,
   Lock
 } from 'lucide-react'
-
 interface Usuario {
   id_usuario: number
   nombre: string
@@ -28,12 +26,10 @@ interface Usuario {
     nombre_rol: string
   }
 }
-
 interface Rol {
   id_rol: number
   nombre_rol: string
 }
-
 export default function UsuariosPage() {
   const { data: session } = useSession()
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
@@ -43,8 +39,6 @@ export default function UsuariosPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
   const [error, setError] = useState<string | null>(null)
-
-  // Form state
   const [formData, setFormData] = useState({
     nombre: '',
     correo: '',
@@ -53,7 +47,6 @@ export default function UsuariosPage() {
     id_rol: 1,
     estado: 'Activo'
   })
-
   const fetchData = async () => {
     setLoading(true)
     try {
@@ -71,39 +64,32 @@ export default function UsuariosPage() {
       setLoading(false)
     }
   }
-
   useEffect(() => {
     const init = async () => {
       await fetchData()
     }
     init()
   }, [])
-
   const handleDelete = async (id: number) => {
     if (id === 1) {
       alert('No se puede eliminar al Administrador principal.')
       return
     }
-
     if (!confirm('¿Estás seguro de que deseas eliminar este usuario? Esta acción eliminará todos sus registros asociados.')) return
-
     try {
       const res = await fetch(`/api/usuarios/${id}`, {
         method: 'DELETE'
       })
-
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || 'Error al eliminar usuario')
       }
-
       fetchData()
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : 'Error desconocido'
       alert(errorMsg)
     }
   }
-
   const handleEdit = (u: Usuario) => {
     setEditingUser(u)
     setFormData({
@@ -116,7 +102,6 @@ export default function UsuariosPage() {
     })
     setIsModalOpen(true)
   }
-
   const closeModal = () => {
     setIsModalOpen(false)
     setEditingUser(null)
@@ -130,26 +115,21 @@ export default function UsuariosPage() {
     })
     setError(null)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
     try {
       const url = editingUser ? `/api/usuarios/${editingUser.id_usuario}` : '/api/usuarios'
       const method = editingUser ? 'PUT' : 'POST'
-
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       })
-
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.error || `Error al ${editingUser ? 'editar' : 'crear'} usuario`)
       }
-
       closeModal()
       fetchData()
     } catch (err: unknown) {
@@ -157,12 +137,10 @@ export default function UsuariosPage() {
       setError(errorMsg)
     }
   }
-
   const filteredUsuarios = usuarios.filter(u =>
     u.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.correo?.toLowerCase().includes(searchTerm.toLowerCase())
   )
-
   if (session?.user && (session.user as { id_rol?: number }).id_rol !== 1) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -174,7 +152,6 @@ export default function UsuariosPage() {
       </div>
     )
   }
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -193,7 +170,6 @@ export default function UsuariosPage() {
           Nuevo Usuario
         </button>
       </div>
-
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
           <div className="relative flex-1 max-w-md">
@@ -207,7 +183,6 @@ export default function UsuariosPage() {
             />
           </div>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
@@ -284,7 +259,6 @@ export default function UsuariosPage() {
           </table>
         </div>
       </div>
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
@@ -296,7 +270,6 @@ export default function UsuariosPage() {
                 <X className="h-5 w-5 text-slate-400" />
               </button>
             </div>
-
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {error && (
                 <div className="p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 flex items-center gap-2">
@@ -304,7 +277,6 @@ export default function UsuariosPage() {
                   {error}
                 </div>
               )}
-
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre Completo</label>
@@ -317,7 +289,6 @@ export default function UsuariosPage() {
                     onChange={(e) => setFormData({...formData, nombre: e.target.value})}
                   />
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Correo</label>
@@ -341,7 +312,6 @@ export default function UsuariosPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Contraseña {editingUser && '(Dejar en blanco para no cambiar)'}
@@ -358,7 +328,6 @@ export default function UsuariosPage() {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Rol</label>
@@ -385,7 +354,6 @@ export default function UsuariosPage() {
                   </div>
                 </div>
               </div>
-
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"

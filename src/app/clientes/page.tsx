@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect } from 'react'
 import { 
   Search, 
@@ -15,7 +14,6 @@ import {
   Users,
   CreditCard
 } from 'lucide-react'
-
 interface Cliente {
   id: number
   nombre: string
@@ -27,19 +25,14 @@ interface Cliente {
     vehiculos: number
   }
 }
-
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
-  
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null)
-  
-  // Form states
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
@@ -49,8 +42,6 @@ export default function ClientesPage() {
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
-
-  // Fetch clients
   const fetchClientes = React.useCallback(async (query = '') => {
     try {
       setLoading(true)
@@ -70,7 +61,6 @@ export default function ClientesPage() {
       setLoading(false)
     }
   }, [])
-
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -82,19 +72,15 @@ export default function ClientesPage() {
       mounted = false
     }
   }, [fetchClientes])
-
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       void fetchClientes(search)
     }, 300)
     return () => clearTimeout(timer)
   }, [search, fetchClientes])
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearch(e.target.value)
   }
-
   const openCreateModal = () => {
     setModalMode('create')
     setSelectedCliente(null)
@@ -107,7 +93,6 @@ export default function ClientesPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const openEditModal = (cliente: Cliente) => {
     setModalMode('edit')
     setSelectedCliente(cliente)
@@ -119,18 +104,15 @@ export default function ClientesPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!nombre || !telefono || !email || !direccion || (modalMode === 'create' && !password)) {
       setFormError('Todos los campos obligatorios deben ser completados')
       return
     }
-
     try {
       setFormSubmitting(true)
       setFormError(null)
-
       const url = modalMode === 'create' ? '/api/clientes' : `/api/clientes/${selectedCliente?.id}`
       const method = modalMode === 'create' ? 'POST' : 'PUT'
       const res = await fetch(url, {
@@ -138,13 +120,10 @@ export default function ClientesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, telefono, email, direccion, identidad, password })
       })
-
       const data = await res.json()
-
       if (!res.ok) {
         throw new Error(data.details || data.error || 'Ocurrió un error al procesar el cliente')
       }
-
       setIsModalOpen(false)
       if (modalMode === 'create') {
         setSuccessMessage('Cliente registrado con éxito. La contraseña provisional ha sido configurada.')
@@ -159,20 +138,16 @@ export default function ClientesPage() {
       setFormSubmitting(false)
     }
   }
-
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro de que deseas eliminar este cliente? Se eliminarán todos sus vehículos y órdenes asociadas.')) return
-
     try {
       const res = await fetch(`/api/clientes/${id}`, {
         method: 'DELETE'
       })
-
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.details || data.error || 'Error al eliminar el cliente')
       }
-
       void fetchClientes(search)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
@@ -180,10 +155,9 @@ export default function ClientesPage() {
       alert(message)
     }
   }
-
   return (
     <div className="space-y-6">
-      {/* Header bar */}
+      {}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black tracking-tight text-slate-800">Directorio de Clientes</h2>
@@ -199,8 +173,7 @@ export default function ClientesPage() {
           Registrar Cliente
         </button>
       </div>
-
-      {/* Search and warnings */}
+      {}
       <div className="flex flex-col gap-4">
         {error && (
           <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-red-50 text-red-600 border border-red-200/35">
@@ -208,14 +181,12 @@ export default function ClientesPage() {
             <span>{error}</span>
           </div>
         )}
-
         {successMessage && (
           <div className="flex items-center gap-2 p-3 text-xs rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200/35 animate-in fade-in slide-in-from-top-2">
             <CheckCircle className="h-4 w-4 shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
-
         <div className="relative w-full max-w-md">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400" />
           <input
@@ -227,8 +198,7 @@ export default function ClientesPage() {
           />
         </div>
       </div>
-
-      {/* Clients Table */}
+      {}
       <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -307,8 +277,7 @@ export default function ClientesPage() {
           </div>
         )}
       </div>
-
-      {/* CREATE/EDIT MODAL */}
+      {}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-3xl bg-white shadow-2xl p-6 space-y-6">
@@ -325,13 +294,11 @@ export default function ClientesPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-
             {formError && (
               <div className="p-3 text-xs rounded-xl bg-red-50 text-red-600 border border-red-200 flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" /> {formError}
               </div>
             )}
-
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
                 <label htmlFor="nombre" className="text-[10px] font-bold text-slate-500 uppercase">Nombre Completo</label>
@@ -344,7 +311,6 @@ export default function ClientesPage() {
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label htmlFor="telefono" className="text-[10px] font-bold text-slate-500 uppercase">Teléfono</label>
@@ -369,7 +335,6 @@ export default function ClientesPage() {
                   />
                 </div>
               </div>
-
               {modalMode === 'create' && (
                 <div className="space-y-1.5">
                   <label htmlFor="password" className="text-[10px] font-bold text-slate-500 uppercase">Contraseña Provisional</label>
@@ -384,7 +349,6 @@ export default function ClientesPage() {
                   />
                 </div>
               )}
-
               <div className="space-y-1.5">
                 <label htmlFor="identidad" className="text-[10px] font-bold text-slate-500 uppercase">N° Identidad</label>
                 <input
@@ -395,7 +359,6 @@ export default function ClientesPage() {
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                 />
               </div>
-
               <div className="space-y-1.5">
                 <label htmlFor="direccion" className="text-[10px] font-bold text-slate-500 uppercase">Dirección</label>
                 <textarea
@@ -407,7 +370,6 @@ export default function ClientesPage() {
                   className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-slate-50 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/25"
                 />
               </div>
-
               <div className="flex items-center justify-end gap-3 pt-4">
                 <button
                   type="button"

@@ -1,14 +1,11 @@
 import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
-
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl
     const token = req.nextauth.token
     const id_rol = Number(token?.id_rol)
-
     if (id_rol === 1) return NextResponse.next()
-
     if (id_rol === 2) {
       const allowed = ['/clientes', '/vehiculos', '/ordenes', '/servicios-realizados', '/facturas', '/alertas', '/api/']
       if (pathname === '/' || allowed.some(path => pathname.startsWith(path))) return NextResponse.next()
@@ -21,7 +18,6 @@ export default withAuth(
       const allowed = ['/mi-dashboard', '/vehiculos', '/ordenes', '/facturas', '/alertas', '/api/']
       if (pathname === '/' || allowed.some(path => pathname.startsWith(path))) return NextResponse.next()
     }
-
     if (pathname === '/') return NextResponse.next()
     return NextResponse.redirect(new URL("/", req.url))
   },
@@ -30,7 +26,6 @@ export default withAuth(
     pages: { signIn: '/login' }
   }
 )
-
 export const config = {
   matcher: ['/((?!api/auth|login|_next/static|_next/image|favicon.ico).*)'],
 }

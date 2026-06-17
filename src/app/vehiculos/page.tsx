@@ -1,23 +1,19 @@
 'use client'
-
 import React, { useState, useEffect } from 'react'
 import { 
   Plus, 
   Search, 
   Edit2, 
   Trash2, 
-  Loader2, 
   Car,
   User,
   X
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
-
 interface Cliente {
   id: number
   nombre: string
 }
-
 interface Vehiculo {
   id_vehiculo: number
   placa: string
@@ -35,22 +31,18 @@ interface Vehiculo {
     }
   }
 }
-
 export default function VehiculosPage() {
   const { data: session } = useSession()
-  const user = session?.user as any
+  const user = session?.user as { id_rol: number; id_usuario: string } | undefined
   const id_rol = user?.id_rol ? Number(user.id_rol) : null
-
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
-  
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedVehiculo, setSelectedVehiculo] = useState<Vehiculo | null>(null)
-  
   const [placa, setPlaca] = useState('')
   const [marca, setMarca] = useState('')
   const [modelo, setModelo] = useState('')
@@ -60,47 +52,51 @@ export default function VehiculosPage() {
   const [tipoCombustible, setTipoCombustible] = useState('')
   const [kilometraje, setKilometraje] = useState<number>(0)
   const [clienteId, setClienteId] = useState<string>('')
-
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-
-  const fetchData = React.useCallback(async (query = '') => {
+  /* OPTIMIZACIÓN: Separación de la carga de metadatos (clientes) de la búsqueda de vehículos para evitar re-peticiones innecesarias */
+  const fetchVehiculos = React.useCallback(async (query = '') => {
     try {
       setLoading(true)
       const vehURL = `/api/vehiculos${query ? `?q=${encodeURIComponent(query)}` : ''}`
-      const [vehRes, cliRes] = await Promise.all([
-        fetch(vehURL),
-        fetch('/api/clientes')
-      ])
-
-      if (!vehRes.ok || !cliRes.ok) throw new Error('Error al conectar con el servidor')
-
+      const vehRes = await fetch(vehURL)
+      if (!vehRes.ok) throw new Error('Error al obtener vehículos')
       setVehiculos(await vehRes.json())
-      setClientes(await cliRes.json())
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
+      setError(err instanceof Error ? err.message : 'Error al cargar vehículos')
     } finally {
       setLoading(false)
     }
   }, [])
-
+  const fetchClientes = React.useCallback(async () => {
+    try {
+      const cliRes = await fetch('/api/clientes')
+      if (cliRes.ok) setClientes(await cliRes.json())
+    } catch (err) {
+      console.error('Error al cargar clientes:', err)
+    }
+  }, [])
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (mounted) {
-        await fetchData()
+        await fetchClientes()
+        await fetchVehiculos()
       }
     })()
     return () => { mounted = false }
-  }, [fetchData])
-
+  }, [fetchClientes, fetchVehiculos])
+  /* OPTIMIZACIÓN: Implementación de debounce para reducir el número de llamadas a la API durante la búsqueda */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchVehiculos(search)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [search, fetchVehiculos])
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setSearch(val)
-    fetchData(val)
+    setSearch(e.target.value)
   }
-
   const openCreateModal = () => {
     setModalMode('create')
     setSelectedVehiculo(null)
@@ -116,7 +112,6 @@ export default function VehiculosPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const openEditModal = (vehiculo: Vehiculo) => {
     setModalMode('edit')
     setSelectedVehiculo(vehiculo)
@@ -132,7 +127,6 @@ export default function VehiculosPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -154,28 +148,25 @@ export default function VehiculosPage() {
           kilometraje_actual: parseInt(kilometraje.toString())
         })
       })
-
       if (!res.ok) throw new Error('Error al guardar')
       setIsModalOpen(false)
-      fetchData(search)
+      fetchVehiculos(search)
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Error al guardar')
     } finally {
       setFormSubmitting(false)
     }
   }
-
   const handleDelete = async (id: number) => {
     if (!confirm('¿Estás seguro?')) return
     try {
       const res = await fetch(`/api/vehiculos/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Error al eliminar')
-      fetchData(search)
+      fetchVehiculos(search)
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Error al eliminar')
     }
   }
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -192,7 +183,6 @@ export default function VehiculosPage() {
           </button>
         )}
       </div>
-
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
           <div className="relative flex-1 max-w-md">
@@ -206,7 +196,6 @@ export default function VehiculosPage() {
             />
           </div>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
@@ -255,7 +244,6 @@ export default function VehiculosPage() {
           </table>
         </div>
       </div>
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-scale-in">

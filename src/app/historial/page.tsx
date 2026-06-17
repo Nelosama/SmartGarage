@@ -1,19 +1,15 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { History, Search, Clock, ArrowRight } from 'lucide-react'
-
 export default function HistorialPage() {
   const [historial, setHistorial] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     fetch('/api/historial_estados_orden').then(res => res.json()).then(data => {
       setHistorial(Array.isArray(data) ? data : [])
       setLoading(false)
     })
   }, [])
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -23,7 +19,6 @@ export default function HistorialPage() {
         </h1>
         <p className="text-slate-500 text-sm">Registro de transiciones de estado por orden.</p>
       </div>
-
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
@@ -42,19 +37,15 @@ export default function HistorialPage() {
               ) : historial.map(h => (
                 <tr key={h.id_historial_estado} className="hover:bg-slate-50 transition-colors">
   <td className="px-6 py-4 font-bold text-slate-800">#{h.id_orden}</td>
-
   <td className="px-6 py-4">
     <span className="text-slate-400 font-medium">Cambio registrado</span>
   </td>
-
   <td className="px-6 py-4 text-center">
     <ArrowRight className="h-3 w-3 text-slate-300 mx-auto" />
   </td>
-
   <td className="px-6 py-4">
     <span className="font-bold text-orange-600">{h.estado?.nombre_estado || 'N/A'}</span>
   </td>
-
   <td className="px-6 py-4 text-right text-xs text-slate-400">
     {h.fecha_hora ? new Date(h.fecha_hora).toLocaleString('es-HN') : 'N/A'}
   </td>

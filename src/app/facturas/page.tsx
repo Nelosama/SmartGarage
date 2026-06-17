@@ -1,10 +1,8 @@
 'use client'
-
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Receipt, Search, Plus, Edit2, Trash2, X } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 import { formatCurrency, formatDate } from '@/lib/utils'
-
 interface FacturaResumen {
   id_factura: number
   numero_factura: string
@@ -22,7 +20,6 @@ interface FacturaResumen {
   impuesto: number
   descuento: number
 }
-
 interface Orden {
   id_orden: number
   vehiculo: {
@@ -34,7 +31,6 @@ interface Orden {
     }
   }
 }
-
 export default function FacturasPage() {
   const { data: session, status } = useSession()
   const user = session?.user as { id_rol: number; id_usuario: string; nombre: string } | null
@@ -42,12 +38,10 @@ export default function FacturasPage() {
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [currentFactura, setCurrentFactura] = useState<FacturaResumen | null>(null)
-
   const [formData, setFormData] = useState({
     id_orden: '',
     numero_factura: '',
@@ -58,7 +52,6 @@ export default function FacturasPage() {
     estado_pago: 'Pendiente',
     metodo_pago: ''
   })
-
   const fetchFacturas = useCallback(async () => {
     try {
       const res = await fetch('/api/facturas')
@@ -71,7 +64,6 @@ export default function FacturasPage() {
       setLoading(false)
     }
   }, [])
-
   const fetchOrdenes = useCallback(async () => {
     try {
       const res = await fetch('/api/ordenes')
@@ -82,7 +74,6 @@ export default function FacturasPage() {
       console.error('Error fetching ordenes:', error)
     }
   }, [])
-
   useEffect(() => {
     let mounted = true;
     if (status === 'authenticated' && user) {
@@ -97,7 +88,6 @@ export default function FacturasPage() {
     }
     return () => { mounted = false };
   }, [status, user, fetchFacturas, fetchOrdenes])
-
   const filteredFacturas = useMemo(() => {
     return facturas.filter(f =>
       f.numero_factura?.toLowerCase().includes(search.toLowerCase()) ||
@@ -106,7 +96,6 @@ export default function FacturasPage() {
       f.id_orden?.toString().includes(search)
     )
   }, [facturas, search])
-
   const totalCalculated = useMemo(() => {
     return (
       Number(formData.subtotal_servicios) +
@@ -115,7 +104,6 @@ export default function FacturasPage() {
       Number(formData.descuento)
     )
   }, [formData])
-
   const resetForm = useCallback(() => {
     setFormData({
       id_orden: '',
@@ -129,7 +117,6 @@ export default function FacturasPage() {
     })
     setCurrentFactura(null)
   }, [])
-
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -150,7 +137,6 @@ export default function FacturasPage() {
       console.error('Error creating factura:', error)
     }
   }
-
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!currentFactura) return
@@ -172,7 +158,6 @@ export default function FacturasPage() {
       console.error('Error updating factura:', error)
     }
   }
-
   const handleDelete = async () => {
     if (!currentFactura) return
     try {
@@ -190,7 +175,6 @@ export default function FacturasPage() {
       console.error('Error deleting factura:', error)
     }
   }
-
   const openEdit = (f: FacturaResumen) => {
     setCurrentFactura(f)
     setFormData({
@@ -205,7 +189,6 @@ export default function FacturasPage() {
     })
     setShowEditModal(true)
   }
-
   const getStatusColor = (estado: string) => {
     switch (estado) {
       case 'Pagado': return 'bg-emerald-50 text-emerald-700 border-emerald-100'
@@ -214,13 +197,10 @@ export default function FacturasPage() {
       default: return 'bg-slate-50 text-slate-700 border-slate-100'
     }
   }
-
   if (status === 'loading') {
     return <div className="p-8 text-center text-slate-400 font-bold animate-pulse">Cargando datos de sesión...</div>
   }
-
   const roleId = Number(user?.id_rol)
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -241,7 +221,6 @@ export default function FacturasPage() {
           </button>
         )}
       </div>
-
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
@@ -255,7 +234,6 @@ export default function FacturasPage() {
             />
           </div>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
@@ -330,8 +308,7 @@ export default function FacturasPage() {
           </table>
         </div>
       </div>
-
-      {/* Modal Crear */}
+      {}
       {showCreateModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-scale-in">
@@ -441,12 +418,10 @@ export default function FacturasPage() {
                   />
                 </div>
               </div>
-
               <div className="mt-8 p-6 bg-orange-50 rounded-2xl flex items-center justify-between border border-orange-100">
                 <span className="text-orange-800 font-bold uppercase tracking-wider text-sm">Total a Facturar</span>
                 <span className="text-3xl font-black text-orange-600">{formatCurrency(totalCalculated)}</span>
               </div>
-
               <div className="flex justify-end gap-3 mt-8">
                 <button
                   type="button"
@@ -466,8 +441,7 @@ export default function FacturasPage() {
           </div>
         </div>
       )}
-
-      {/* Modal Editar */}
+      {}
       {showEditModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-scale-in">
@@ -558,12 +532,10 @@ export default function FacturasPage() {
                   />
                 </div>
               </div>
-
               <div className="mt-8 p-6 bg-orange-50 rounded-2xl flex items-center justify-between border border-orange-100">
                 <span className="text-orange-800 font-bold uppercase tracking-wider text-sm">Total Actualizado</span>
                 <span className="text-3xl font-black text-orange-600">{formatCurrency(totalCalculated)}</span>
               </div>
-
               <div className="flex justify-end gap-3 mt-8">
                 <button
                   type="button"
@@ -583,8 +555,7 @@ export default function FacturasPage() {
           </div>
         </div>
       )}
-
-      {/* Modal Eliminar */}
+      {}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-scale-in">

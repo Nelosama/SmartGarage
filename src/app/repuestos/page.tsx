@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect } from 'react'
 import {
   Plus,
@@ -12,7 +11,6 @@ import {
   AlertCircle,
   TrendingDown
 } from 'lucide-react'
-
 interface Repuesto {
   id_repuesto: number
   nombre_repuesto: string
@@ -23,19 +21,14 @@ interface Repuesto {
   stock_minimo: number
   estado: string
 }
-
 export default function RepuestosPage() {
   const [repuestos, setRepuestos] = useState<Repuesto[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
-
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedRepuesto, setSelectedRepuesto] = useState<Repuesto | null>(null)
-
-  // Form states
   const [nombre, setNombre] = useState('')
   const [marca, setMarca] = useState('')
   const [descripcion, setDescripcion] = useState('')
@@ -43,10 +36,8 @@ export default function RepuestosPage() {
   const [precio, setPrecio] = useState<number>(0)
   const [stockMin, setStockMin] = useState<number>(0)
   const [estado, setEstado] = useState('Activo')
-
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-
   const fetchData = async () => {
     try {
       setLoading(true)
@@ -59,11 +50,9 @@ export default function RepuestosPage() {
       setLoading(false)
     }
   }
-
   useEffect(() => {
     fetchData()
   }, [])
-
   const openCreateModal = () => {
     setModalMode('create')
     setSelectedRepuesto(null)
@@ -77,7 +66,6 @@ export default function RepuestosPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const openEditModal = (r: Repuesto) => {
     setModalMode('edit')
     setSelectedRepuesto(r)
@@ -91,7 +79,6 @@ export default function RepuestosPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -111,7 +98,6 @@ export default function RepuestosPage() {
           estado
         })
       })
-
       if (!res.ok) throw new Error('Error al procesar')
       setIsModalOpen(false)
       fetchData()
@@ -121,7 +107,6 @@ export default function RepuestosPage() {
       setFormSubmitting(false)
     }
   }
-
   const handleDelete = async (id: number) => {
     if (!confirm('¿Seguro?')) return
     try {
@@ -132,12 +117,10 @@ export default function RepuestosPage() {
       alert(err.message)
     }
   }
-
   const filteredRepuestos = repuestos.filter(r =>
     r.nombre_repuesto.toLowerCase().includes(search.toLowerCase()) ||
     (r.marca && r.marca.toLowerCase().includes(search.toLowerCase()))
   )
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -156,7 +139,6 @@ export default function RepuestosPage() {
           Nuevo Repuesto
         </button>
       </div>
-
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
           <div className="relative flex-1 max-w-md">
@@ -170,7 +152,6 @@ export default function RepuestosPage() {
             />
           </div>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
@@ -219,7 +200,6 @@ export default function RepuestosPage() {
           </table>
         </div>
       </div>
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">

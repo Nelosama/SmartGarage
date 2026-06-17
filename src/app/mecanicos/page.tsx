@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect } from 'react'
 import {
   Plus,
@@ -12,7 +11,6 @@ import {
   AlertCircle,
   Briefcase
 } from 'lucide-react'
-
 interface Mecanico {
   id_mecanico: number
   id_usuario: number
@@ -23,33 +21,25 @@ interface Mecanico {
     correo: string
   }
 }
-
 interface Usuario {
   id_usuario: number
   nombre: string
   id_rol: number
 }
-
 export default function MecanicosPage() {
   const [mecanicos, setMecanicos] = useState<Mecanico[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
-
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedMecanico, setSelectedMecanico] = useState<Mecanico | null>(null)
-
-  // Form states
   const [idUsuario, setIdUsuario] = useState<string>('')
   const [especialidad, setEspecialidad] = useState('')
   const [estado, setEstado] = useState('Disponible')
-
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-
   const fetchData = async () => {
     try {
       setLoading(true)
@@ -66,11 +56,9 @@ export default function MecanicosPage() {
       setLoading(false)
     }
   }
-
   useEffect(() => {
     fetchData()
   }, [])
-
   const openCreateModal = () => {
     setModalMode('create')
     setSelectedMecanico(null)
@@ -80,7 +68,6 @@ export default function MecanicosPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const openEditModal = (m: Mecanico) => {
     setModalMode('edit')
     setSelectedMecanico(m)
@@ -90,7 +77,6 @@ export default function MecanicosPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -106,12 +92,10 @@ export default function MecanicosPage() {
           estado
         })
       })
-
       if (!res.ok) {
         const data = await res.json()
         throw new Error(data.details || data.error || 'Error al procesar')
       }
-
       setIsModalOpen(false)
       fetchData()
     } catch (err: any) {
@@ -120,7 +104,6 @@ export default function MecanicosPage() {
       setFormSubmitting(false)
     }
   }
-
   const handleDelete = async (id: number) => {
     if (!confirm('¿Seguro?')) return
     try {
@@ -131,12 +114,10 @@ export default function MecanicosPage() {
       alert(err.message)
     }
   }
-
   const filteredMecanicos = mecanicos.filter(m =>
     m.usuario.nombre.toLowerCase().includes(search.toLowerCase()) ||
     (m.especialidad && m.especialidad.toLowerCase().includes(search.toLowerCase()))
   )
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -155,7 +136,6 @@ export default function MecanicosPage() {
           Registrar Mecánico
         </button>
       </div>
-
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-slate-100 flex items-center gap-4 bg-slate-50/50">
           <div className="relative flex-1 max-w-md">
@@ -169,7 +149,6 @@ export default function MecanicosPage() {
             />
           </div>
         </div>
-
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
             <thead>
@@ -231,7 +210,6 @@ export default function MecanicosPage() {
           </table>
         </div>
       </div>
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">
@@ -241,7 +219,6 @@ export default function MecanicosPage() {
                 <X className="h-5 w-5 text-slate-400" />
               </button>
             </div>
-
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {formError && (
                 <div className="p-3 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100 flex items-center gap-2">
@@ -249,7 +226,6 @@ export default function MecanicosPage() {
                   {formError}
                 </div>
               )}
-
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Seleccionar Usuario</label>
@@ -286,7 +262,6 @@ export default function MecanicosPage() {
                   </select>
                 </div>
               </div>
-
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"

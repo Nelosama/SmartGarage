@@ -13,22 +13,15 @@ import {
   CheckCircle
 } from 'lucide-react'
 import Link from 'next/link'
-
 export const dynamic = 'force-dynamic'
-
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/login')
-
   const user = session.user as any
   const id_rol = Number(user.id_rol)
-
-  // Redirect Clientes to their specific dashboard
   if (id_rol === 4) {
     redirect('/mi-dashboard')
   }
-
-  // Dashboard for Admin (1) and Reception (2)
   if (id_rol === 1 || id_rol === 2) {
     let stats = {
       clientes: 0,
@@ -39,7 +32,6 @@ export default async function DashboardPage() {
       recaudado: 0
     }
     let recentOrders: any[] = []
-
     try {
       const [
         totalClientes,
@@ -56,9 +48,7 @@ export default async function DashboardPage() {
         prisma.ordenTrabajo.count({ where: { estado_actual: { nombre_estado: { in: ['Listo para entrega', 'Entregado'] } } } }),
         prisma.ordenServicio.findMany({ select: { subtotal: true } })
       ])
-
       const totalRecaudado = servicios.reduce((acc, s) => acc + Number(s.subtotal), 0)
-
       recentOrders = await prisma.ordenTrabajo.findMany({
         take: 5,
         orderBy: { fecha_ingreso: 'desc' },
@@ -75,7 +65,6 @@ export default async function DashboardPage() {
           estado_actual: true
         }
       })
-
       stats = {
         clientes: totalClientes,
         vehiculos: totalVehiculos,
@@ -87,16 +76,13 @@ export default async function DashboardPage() {
     } catch (e) {
       console.error(e)
     }
-
     const activeOrdersCount = stats.pendientes + stats.enProgreso
-
     return (
       <div className="space-y-8 animate-fade-in">
         <div className="bg-orange-600 rounded-3xl p-8 text-white shadow-xl shadow-orange-500/20">
           <h2 className="text-2xl font-black">Panel de Control General</h2>
           <p className="text-orange-100 mt-2">Bienvenido, {user.nombre}. Resumen operativo del taller.</p>
         </div>
-
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard title="Clientes" value={stats.clientes} icon={<Users />} color="orange" />
           <StatCard title="Vehículos" value={stats.vehiculos} icon={<Car />} color="slate" />
@@ -105,7 +91,6 @@ export default async function DashboardPage() {
             <StatCard title="Total Recaudado" value={`L ${stats.recaudado.toLocaleString()}`} icon={<TrendingUp />} color="emerald" />
           )}
         </div>
-
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-bold text-slate-800">Órdenes Recientes</h3>
@@ -141,12 +126,9 @@ export default async function DashboardPage() {
       </div>
     )
   }
-
-  // Dashboard for Mechanic (3)
   if (id_rol === 3) {
     let myOrders: any[] = []
     let stats = { activas: 0, completadas: 0 }
-
     try {
       const mecanico = await prisma.mecanico.findUnique({ where: { id_usuario: parseInt(user.id_usuario) } })
       if (mecanico) {
@@ -176,14 +158,12 @@ export default async function DashboardPage() {
     } catch (e) {
       console.error(e)
     }
-
     return (
       <div className="space-y-8 animate-fade-in">
         <div className="bg-slate-800 rounded-3xl p-8 text-white shadow-xl shadow-slate-900/20">
           <h2 className="text-2xl font-black">Panel del Mecánico</h2>
           <p className="text-slate-300 mt-2">Hola, {user.nombre}. Aquí están tus trabajos asignados.</p>
         </div>
-
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
             <div className="p-4 rounded-xl bg-orange-50 text-orange-600"><Clock /></div>
@@ -200,7 +180,6 @@ export default async function DashboardPage() {
             </div>
           </div>
         </div>
-
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="px-6 py-4 border-b border-slate-100">
             <h3 className="font-bold text-slate-800">Mis Trabajos Recientes</h3>
@@ -226,10 +205,8 @@ export default async function DashboardPage() {
       </div>
     )
   }
-
   return null
 }
-
 function StatCard({ title, value, icon, color }: { title: string, value: string | number, icon: React.ReactNode, color: string }) {
   const colors: Record<string, string> = {
     orange: 'bg-orange-50 text-orange-600',

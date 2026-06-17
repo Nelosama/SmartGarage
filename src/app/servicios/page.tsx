@@ -1,5 +1,4 @@
 'use client'
-
 import React, { useState, useEffect } from 'react'
 import {
   Plus,
@@ -12,7 +11,6 @@ import {
   AlertCircle,
   Clock
 } from 'lucide-react'
-
 interface Servicio {
   id_servicio: number
   nombre_servicio: string
@@ -21,26 +19,21 @@ interface Servicio {
   duracion_estimada_min: number | null
   estado: string
 }
-
 export default function ServiciosPage() {
   const [servicios, setServicios] = useState<Servicio[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
-
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedServicio, setSelectedServicio] = useState<Servicio | null>(null)
-
   const [nombre, setNombre] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [precio, setPrecio] = useState<number>(0)
   const [duracion, setDuracion] = useState<number>(0)
   const [estado, setEstado] = useState('Activo')
-
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-
   const fetchData = async () => {
     try {
       setLoading(true)
@@ -53,11 +46,9 @@ export default function ServiciosPage() {
       setLoading(false)
     }
   }
-
   useEffect(() => {
     fetchData()
   }, [])
-
   const openCreateModal = () => {
     setModalMode('create')
     setSelectedServicio(null)
@@ -69,7 +60,6 @@ export default function ServiciosPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const openEditModal = (s: Servicio) => {
     setModalMode('edit')
     setSelectedServicio(s)
@@ -81,7 +71,6 @@ export default function ServiciosPage() {
     setFormError(null)
     setIsModalOpen(true)
   }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -108,9 +97,7 @@ export default function ServiciosPage() {
       setFormSubmitting(false)
     }
   }
-
   const filtered = servicios.filter(s => s.nombre_servicio.toLowerCase().includes(search.toLowerCase()))
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -125,7 +112,6 @@ export default function ServiciosPage() {
           <Plus className="h-4 w-4" /> Nuevo Servicio
         </button>
       </div>
-
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
@@ -162,7 +148,6 @@ export default function ServiciosPage() {
           </table>
         </div>
       </div>
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-scale-in">

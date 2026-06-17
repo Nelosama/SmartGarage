@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -15,7 +14,6 @@ export async function GET(
     return NextResponse.json({ error: 'Error al obtener servicio', details: error.message }, { status: 500 })
   }
 }
-
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -25,7 +23,6 @@ export async function PUT(
     const id = parseInt(resolvedParams.id, 10)
     const body = await request.json()
     const { nombre_servicio, descripcion, precio_base, duracion_estimada_min, intervalo_km, intervalo_meses, estado } = body
-
     const servicio = await prisma.servicio.update({
       where: { id_servicio: id },
       data: { nombre_servicio, descripcion, precio_base, duracion_estimada_min, intervalo_km, intervalo_meses, estado },
@@ -35,7 +32,6 @@ export async function PUT(
     return NextResponse.json({ error: 'Error al actualizar servicio', details: error.message }, { status: 500 })
   }
 }
-
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

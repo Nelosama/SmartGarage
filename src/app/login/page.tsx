@@ -3,14 +3,12 @@ import { useState } from "react";
 import { Wrench, Lock, Mail, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-
 export default function LoginPage() {
   const router = useRouter();
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -29,7 +27,6 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors duration-200">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
@@ -39,7 +36,6 @@ export default function LoginPage() {
         <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">SmartGarage</h2>
         <p className="mt-2 text-sm text-slate-600 font-medium">Taller Mecánico • Panel de Control</p>
       </div>
-
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-xl shadow-slate-200/50 sm:rounded-2xl sm:px-10 border border-slate-200 transition-colors">
           <form className="space-y-6" onSubmit={handleSubmit}>
