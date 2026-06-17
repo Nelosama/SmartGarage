@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
@@ -17,7 +17,6 @@ import {
   Briefcase,
   LogOut,
   FileText,
-  History,
   AlertTriangle,
   UserCog
 } from 'lucide-react'
@@ -26,13 +25,21 @@ interface LayoutShellProps {
   children: React.ReactNode
 }
 
+interface AuthUser {
+  id_rol: number
+  id_usuario: string
+  nombre: string
+  name?: string | null
+  nombre_rol?: string | null
+}
+
 export default function LayoutShell({ children }: LayoutShellProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: session, status } = useSession()
-  const user = session?.user as any
+  const user = session?.user as AuthUser | null
 
-  const allMenuItems = [
+  const allMenuItems = useMemo(() => [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard, roles: [1, 2, 3] },
     { name: 'Mi Dashboard', href: '/mi-dashboard', icon: LayoutDashboard, roles: [4] },
     { name: 'Clientes', href: '/clientes', icon: Users, roles: [1, 2] },
@@ -40,19 +47,18 @@ export default function LayoutShell({ children }: LayoutShellProps) {
     { name: 'Órdenes de Trabajo', href: '/ordenes', icon: Wrench, roles: [1, 2, 3, 4] },
     { name: 'Diagnósticos', href: '/diagnosticos', icon: Activity, roles: [1, 3] },
     { name: 'Servicios Realizados', href: '/servicios-realizados', icon: ClipboardList, roles: [1, 2, 3] },
-    // { name: 'Facturas', href: '/facturas', icon: FileText, roles: [1, 2, 4] },
-    // { name: 'Historial Estados', href: '/historial', icon: History, roles: [1, 2, 3] },
-    // { name: 'Alertas Mantenimiento', href: '/alertas', icon: AlertTriangle, roles: [1, 2, 4] },
+    { name: 'Facturas', href: '/facturas', icon: FileText, roles: [1, 2, 4] },
+    { name: 'Alertas Mantenimiento', href: '/alertas', icon: AlertTriangle, roles: [1, 2, 4] },
     { name: 'Catálogo Servicios', href: '/servicios', icon: Activity, roles: [1] },
     { name: 'Inventario Repuestos', href: '/repuestos', icon: Package, roles: [1] },
     { name: 'Equipo Mecánico', href: '/mecanicos', icon: Briefcase, roles: [1] },
     { name: 'Usuarios', href: '/usuarios', icon: UserCog, roles: [1] },
-  ]
+  ], [])
 
   const menuItems = useMemo(() => {
     if (!user) return []
     return allMenuItems.filter(item => item.roles.includes(user.id_rol))
-  }, [user])
+  }, [user, allMenuItems])
 
   const getPageTitle = () => {
     const item = allMenuItems.find(m => m.href === pathname || (m.href !== '/' && pathname.startsWith(m.href)))
@@ -67,7 +73,6 @@ export default function LayoutShell({ children }: LayoutShellProps) {
     return <>{children}</>
   }
 
-  // Show loading spinner until session is loaded
   if (status === 'loading') {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3 animate-pulse">
