@@ -1,4 +1,5 @@
 'use client'
+
 import React, { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
@@ -9,8 +10,10 @@ import {
   ClipboardList,
   DollarSign,
   X,
-  Wrench
+  Wrench,
+  Package,
 } from 'lucide-react'
+
 interface Vehiculo {
   placa: string
   marca: string
@@ -21,6 +24,7 @@ interface Vehiculo {
     }
   }
 }
+
 interface Orden {
   id_orden: number
   motivo_ingreso: string
@@ -29,12 +33,24 @@ interface Orden {
   }
   vehiculo: Vehiculo
 }
+
 interface CatalogoServicio {
   id_servicio: number
   nombre_servicio: string
   descripcion?: string
   precio_base: number
 }
+
+interface CatalogoRepuesto {
+  id_repuesto: number
+  nombre_repuesto: string
+  descripcion?: string
+  precio_unitario?: number
+  precio_venta?: number
+  precio?: number
+  stock: number
+}
+
 interface ServicioRealizado {
   id_orden_servicio: number
   id_orden: number
@@ -49,41 +65,74 @@ interface ServicioRealizado {
   observaciones?: string
   orden: Orden
 }
+
 interface ServicioItem {
   id_servicio: string
   cantidad: number
   precio_unitario: number
 }
+
+interface RepuestoItem {
+  id_repuesto: string
+  cantidad: number
+  precio_unitario: number
+}
+
 function ServiciosRealizadosContent() {
   const searchParams = useSearchParams()
   const filterOrdenId = searchParams.get('ordenId')
+
   const [servicios, setServicios] = useState<ServicioRealizado[]>([])
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [catalogoServicios, setCatalogoServicios] = useState<CatalogoServicio[]>([])
+  const [catalogoRepuestos, setCatalogoRepuestos] = useState<CatalogoRepuesto[]>([])
+
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedServicio, setSelectedServicio] = useState<ServicioRealizado | null>(null)
+
   const [ordenId, setOrdenId] = useState<string>('')
   const [items, setItems] = useState<ServicioItem[]>([])
+  const [repuestosItems, setRepuestosItems] = useState<RepuestoItem[]>([])
   const [observaciones, setObservaciones] = useState('')
+
   const [formSubmitting, setFormSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
   const fetchData = async (query = '') => {
     try {
       setLoading(true)
-      const servURL = `/api/servicios-realizados${filterOrdenId ? `?ordenId=${filterOrdenId}` : ''}${query ? `${filterOrdenId ? '&' : '?'}q=${encodeURIComponent(query)}` : ''}`
-      const [servRes, ordRes, catRes] = await Promise.all([
+
+      const servURL = `/api/servicios-realizados${
+        filterOrdenId ? `?ordenId=${filterOrdenId}` : ''
+      }${query ? `${filterOrdenId ? '&' : '?'}q=${encodeURIComponent(query)}` : ''}`
+
+      const [servRes, ordRes, catRes, repRes] = await Promise.all([
         fetch(servURL),
         fetch('/api/ordenes'),
-        fetch('/api/servicios')
+        fetch('/api/servicios'),
+        fetch('/api/repuestos'),
       ])
-      if (!servRes.ok) throw new Error('Error al conectar con el servidor')
-      setServicios(await servRes.json())
-      setOrdenes(await ordRes.json())
-      setCatalogoServicios(await catRes.json())
+
+      if (!servRes.ok) throw new Error('Error al conectar con servicios realizados')
+      if (!ordRes.ok) throw new Error('Error al cargar órdenes')
+      if (!catRes.ok) throw new Error('Error al cargar catálogo de servicios')
+      if (!repRes.ok) throw new Error('Error al cargar catálogo de repuestos')
+
+      const serviciosData = await servRes.json()
+      const ordenesData = await ordRes.json()
+      const catalogoServiciosData = await catRes.json()
+      const catalogoRepuestosData = await repRes.json()
+
+      setServicios(Array.isArray(serviciosData) ? serviciosData : [])
+      setOrdenes(Array.isArray(ordenesData) ? ordenesData : [])
+      setCatalogoServicios(Array.isArray(catalogoServiciosData) ? catalogoServiciosData : [])
+      setCatalogoRepuestos(Array.isArray(catalogoRepuestosData) ? catalogoRepuestosData : [])
+
       setError(null)
     } catch (err: any) {
       setError(`Error: ${err.message}`)
@@ -91,140 +140,334 @@ function ServiciosRealizadosContent() {
       setLoading(false)
     }
   }
+
   useEffect(() => {
     fetchData(search)
   }, [filterOrdenId])
+
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchData(search)
     }, 300)
+
     return () => clearTimeout(timer)
   }, [search])
+
   const getPrecioServicio = (idServicio: string) => {
-    const servicio = catalogoServicios.find(s => s.id_servicio === Number(idServicio))
+    const servicio = catalogoServicios.find(
+      (s) => s.id_servicio === Number(idServicio)
+    )
+
     return Number(servicio?.precio_base || 0)
   }
+
+  const getPrecioRepuesto = (idRepuesto: string) => {
+    const repuesto = catalogoRepuestos.find(
+      (r) => r.id_repuesto === Number(idRepuesto)
+    )
+
+    return Number(
+      repuesto?.precio_unitario ??
+        repuesto?.precio_venta ??
+        repuesto?.precio ??
+        0
+    )
+  }
+
+  const getStockRepuesto = (idRepuesto: string) => {
+    const repuesto = catalogoRepuestos.find(
+      (r) => r.id_repuesto === Number(idRepuesto)
+    )
+
+    return Number(repuesto?.stock || 0)
+  }
+
+  const getNombreRepuesto = (idRepuesto: string) => {
+    const repuesto = catalogoRepuestos.find(
+      (r) => r.id_repuesto === Number(idRepuesto)
+    )
+
+    return repuesto?.nombre_repuesto || 'Repuesto'
+  }
+
   const createDefaultItem = (excludeIds: string[] = []): ServicioItem => {
     const firstAvailable =
-      catalogoServicios.find(s => !excludeIds.includes(s.id_servicio.toString())) ||
-      catalogoServicios[0]
+      catalogoServicios.find(
+        (s) => !excludeIds.includes(s.id_servicio.toString())
+      ) || catalogoServicios[0]
+
     return {
       id_servicio: firstAvailable?.id_servicio?.toString() || '',
       cantidad: 1,
-      precio_unitario: Number(firstAvailable?.precio_base || 0)
+      precio_unitario: Number(firstAvailable?.precio_base || 0),
     }
   }
+
+  const createDefaultRepuestoItem = (excludeIds: string[] = []): RepuestoItem => {
+    const firstAvailable =
+      catalogoRepuestos.find(
+        (r) =>
+          !excludeIds.includes(r.id_repuesto.toString()) &&
+          Number(r.stock || 0) > 0
+      ) ||
+      catalogoRepuestos.find(
+        (r) => !excludeIds.includes(r.id_repuesto.toString())
+      ) ||
+      catalogoRepuestos[0]
+
+    return {
+      id_repuesto: firstAvailable?.id_repuesto?.toString() || '',
+      cantidad: 1,
+      precio_unitario: Number(
+        firstAvailable?.precio_unitario ??
+          firstAvailable?.precio_venta ??
+          firstAvailable?.precio ??
+          0
+      ),
+    }
+  }
+
   const openCreateModal = () => {
     setModalMode('create')
     setSelectedServicio(null)
     setOrdenId(filterOrdenId || ordenes[0]?.id_orden?.toString() || '')
     setItems([createDefaultItem()])
+    setRepuestosItems([])
     setObservaciones('')
     setFormError(null)
     setIsModalOpen(true)
   }
+
   const openEditModal = (srv: ServicioRealizado) => {
     setModalMode('edit')
     setSelectedServicio(srv)
     setOrdenId(srv.id_orden.toString())
+
     setItems([
       {
         id_servicio: srv.id_servicio.toString(),
         cantidad: Number(srv.cantidad),
-        precio_unitario: Number(srv.precio_unitario)
-      }
+        precio_unitario: Number(srv.precio_unitario),
+      },
     ])
+
+    setRepuestosItems([])
     setObservaciones(srv.observaciones || '')
     setFormError(null)
     setIsModalOpen(true)
   }
+
   const addItem = () => {
-    setItems(prev => {
-      const usedIds = prev.map(item => item.id_servicio)
+    setItems((prev) => {
+      const usedIds = prev.map((item) => item.id_servicio)
       return [...prev, createDefaultItem(usedIds)]
     })
   }
+
   const removeItem = (index: number) => {
-    setItems(prev => prev.filter((_, i) => i !== index))
+    setItems((prev) => prev.filter((_, i) => i !== index))
   }
-  const updateItem = (index: number, field: keyof ServicioItem, value: string | number) => {
-    setItems(prev => {
+
+  const updateItem = (
+    index: number,
+    field: keyof ServicioItem,
+    value: string | number
+  ) => {
+    setItems((prev) => {
       const updated = [...prev]
       const current = { ...updated[index] }
+
       if (field === 'id_servicio') {
         current.id_servicio = String(value)
         current.precio_unitario = getPrecioServicio(String(value))
       }
+
       if (field === 'cantidad') {
         current.cantidad = Number(value)
       }
+
       if (field === 'precio_unitario') {
         current.precio_unitario = Number(value)
       }
+
       updated[index] = current
       return updated
     })
   }
+
+  const addRepuestoItem = () => {
+    setRepuestosItems((prev) => {
+      const usedIds = prev.map((item) => item.id_repuesto)
+      return [...prev, createDefaultRepuestoItem(usedIds)]
+    })
+  }
+
+  const removeRepuestoItem = (index: number) => {
+    setRepuestosItems((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const updateRepuestoItem = (
+    index: number,
+    field: keyof RepuestoItem,
+    value: string | number
+  ) => {
+    setRepuestosItems((prev) => {
+      const updated = [...prev]
+      const current = { ...updated[index] }
+
+      if (field === 'id_repuesto') {
+        current.id_repuesto = String(value)
+        current.precio_unitario = getPrecioRepuesto(String(value))
+      }
+
+      if (field === 'cantidad') {
+        current.cantidad = Number(value)
+      }
+
+      if (field === 'precio_unitario') {
+        current.precio_unitario = Number(value)
+      }
+
+      updated[index] = current
+      return updated
+    })
+  }
+
   const subtotalServicios = items.reduce(
-    (sum, item) => sum + Number(item.cantidad || 0) * Number(item.precio_unitario || 0),
+    (sum, item) =>
+      sum + Number(item.cantidad || 0) * Number(item.precio_unitario || 0),
     0
   )
-  const impuesto = subtotalServicios * 0.15
-  const totalFactura = subtotalServicios + impuesto
-  const selectedOrdenData = ordenes.find(o => o.id_orden === Number(ordenId))
+
+  const subtotalRepuestos = repuestosItems.reduce(
+    (sum, item) =>
+      sum + Number(item.cantidad || 0) * Number(item.precio_unitario || 0),
+    0
+  )
+
+  const subtotalGeneral = subtotalServicios + subtotalRepuestos
+  const impuesto = subtotalGeneral * 0.15
+  const totalFactura = subtotalGeneral + impuesto
+
+  const selectedOrdenData = ordenes.find((o) => o.id_orden === Number(ordenId))
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     try {
       setFormSubmitting(true)
       setFormError(null)
+
       if (!ordenId) {
         throw new Error('Debes seleccionar una orden')
       }
+
       if (items.length === 0) {
         throw new Error('Debes agregar al menos un servicio')
       }
+
       const invalidItem = items.find(
-        item => !item.id_servicio || Number(item.cantidad) <= 0 || Number(item.precio_unitario) < 0
+        (item) =>
+          !item.id_servicio ||
+          Number(item.cantidad) <= 0 ||
+          Number(item.precio_unitario) < 0
       )
+
       if (invalidItem) {
         throw new Error('Revisa los servicios, cantidades y precios')
       }
-      const serviceIds = items.map(item => item.id_servicio)
-      const hasDuplicates = new Set(serviceIds).size !== serviceIds.length
-      if (hasDuplicates) {
-        throw new Error('No repitas el mismo servicio. Usa la cantidad si necesitas cobrar más de una vez.')
+
+      const serviceIds = items.map((item) => item.id_servicio)
+      const hasDuplicateServices = new Set(serviceIds).size !== serviceIds.length
+
+      if (hasDuplicateServices) {
+        throw new Error(
+          'No repitas el mismo servicio. Usa la cantidad si necesitas cobrar más de una vez.'
+        )
       }
-      const shouldUseBulkSave = modalMode === 'create' || items.length > 1
+
+      const repuestosValidos = repuestosItems.filter((item) => item.id_repuesto)
+
+      const invalidRepuesto = repuestosValidos.find(
+        (item) =>
+          !item.id_repuesto ||
+          Number(item.cantidad) <= 0 ||
+          Number(item.precio_unitario) < 0
+      )
+
+      if (invalidRepuesto) {
+        throw new Error('Revisa los repuestos, cantidades y precios')
+      }
+
+      const repuestoIds = repuestosValidos.map((item) => item.id_repuesto)
+      const hasDuplicateRepuestos = new Set(repuestoIds).size !== repuestoIds.length
+
+      if (hasDuplicateRepuestos) {
+        throw new Error(
+          'No repitas el mismo repuesto. Usa la cantidad si necesitas descontar más unidades.'
+        )
+      }
+
+      const repuestoSinStock = repuestosValidos.find((item) => {
+        const stockDisponible = getStockRepuesto(item.id_repuesto)
+        return Number(item.cantidad) > stockDisponible
+      })
+
+      if (repuestoSinStock) {
+        throw new Error(
+          `Stock insuficiente para ${getNombreRepuesto(
+            repuestoSinStock.id_repuesto
+          )}. Disponible: ${getStockRepuesto(
+            repuestoSinStock.id_repuesto
+          )}, requerido: ${repuestoSinStock.cantidad}`
+        )
+      }
+
+      const shouldUseBulkSave =
+        modalMode === 'create' ||
+        items.length > 1 ||
+        repuestosValidos.length > 0
+
       const url = shouldUseBulkSave
         ? '/api/servicios-realizados'
         : `/api/servicios-realizados/${selectedServicio?.id_orden_servicio}`
+
       const method = shouldUseBulkSave ? 'POST' : 'PUT'
+
       const body = shouldUseBulkSave
         ? {
             id_orden: Number(ordenId),
-            items: items.map(item => ({
+            items: items.map((item) => ({
               id_servicio: Number(item.id_servicio),
               cantidad: Number(item.cantidad),
-              precio_unitario: Number(item.precio_unitario)
+              precio_unitario: Number(item.precio_unitario),
             })),
-            observaciones
+            repuestos: repuestosValidos.map((item) => ({
+              id_repuesto: Number(item.id_repuesto),
+              cantidad: Number(item.cantidad),
+              precio_unitario: Number(item.precio_unitario),
+            })),
+            observaciones,
           }
         : {
             id_servicio: Number(items[0].id_servicio),
             id_orden: Number(ordenId),
             cantidad: Number(items[0].cantidad),
             precio_unitario: Number(items[0].precio_unitario),
-            observaciones
+            observaciones,
           }
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
       })
+
       if (!res.ok) {
         const data = await res.json().catch(() => null)
         throw new Error(data?.details || data?.error || 'Error al guardar')
       }
+
       setIsModalOpen(false)
       fetchData(search)
     } catch (err: any) {
@@ -233,20 +476,26 @@ function ServiciosRealizadosContent() {
       setFormSubmitting(false)
     }
   }
+
   const handleDelete = async (id: number) => {
     const confirmDelete = confirm('¿Seguro que deseas eliminar este servicio realizado?')
     if (!confirmDelete) return
+
     try {
       const res = await fetch(`/api/servicios-realizados/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
+
       if (!res.ok) throw new Error('Error al eliminar')
+
       fetchData(search)
     } catch (err: any) {
       setError(err.message)
     }
   }
+
   const totalCosto = servicios.reduce((sum, s) => sum + Number(s.subtotal), 0)
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -255,8 +504,11 @@ function ServiciosRealizadosContent() {
             <ClipboardList className="h-8 w-8 text-orange-600" />
             Servicios Realizados
           </h1>
-          <p className="text-slate-500 text-sm">Registro de trabajos y generación automática de factura.</p>
+          <p className="text-slate-500 text-sm">
+            Registro de trabajos, repuestos usados y generación automática de factura.
+          </p>
         </div>
+
         <button
           onClick={openCreateModal}
           className="bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-orange-500/20 active:scale-95 flex items-center gap-2"
@@ -265,24 +517,33 @@ function ServiciosRealizadosContent() {
           Registrar Trabajo
         </button>
       </div>
+
       {error && (
         <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl p-3">
           {error}
         </div>
       )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-4">
           <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
             <DollarSign className="h-6 w-6" />
           </div>
+
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase">Costo Total Acumulado</p>
-            <p className="text-2xl font-black text-slate-800">L {totalCosto.toFixed(2)}</p>
+            <p className="text-xs font-bold text-slate-400 uppercase">
+              Costo Total Acumulado
+            </p>
+            <p className="text-2xl font-black text-slate-800">
+              L {totalCosto.toFixed(2)}
+            </p>
           </div>
         </div>
+
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+
             <input
               type="text"
               placeholder="Buscar servicio u observación..."
@@ -293,6 +554,7 @@ function ServiciosRealizadosContent() {
           </div>
         </div>
       </div>
+
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">
@@ -304,6 +566,7 @@ function ServiciosRealizadosContent() {
                 <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
@@ -318,24 +581,35 @@ function ServiciosRealizadosContent() {
                   </td>
                 </tr>
               ) : (
-                servicios.map(srv => (
-                  <tr key={srv.id_orden_servicio} className="hover:bg-slate-50/50 transition-colors">
+                servicios.map((srv) => (
+                  <tr
+                    key={srv.id_orden_servicio}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
                     <td className="px-6 py-4">
                       <p className="font-bold text-slate-800">Orden #{srv.id_orden}</p>
                       <p className="text-xs text-slate-500">
-                        {srv.orden.vehiculo.placa} ({srv.orden.vehiculo.cliente.usuario.nombre})
+                        {srv.orden.vehiculo.placa} (
+                        {srv.orden.vehiculo.cliente.usuario.nombre})
                       </p>
                     </td>
+
                     <td className="px-6 py-4">
-                      <p className="font-bold text-slate-800">{srv.servicio.nombre_servicio}</p>
+                      <p className="font-bold text-slate-800">
+                        {srv.servicio.nombre_servicio}
+                      </p>
                       <p className="text-xs text-slate-400">{srv.observaciones}</p>
                     </td>
+
                     <td className="px-6 py-4">
-                      <p className="font-black text-orange-600">L {Number(srv.subtotal).toFixed(2)}</p>
+                      <p className="font-black text-orange-600">
+                        L {Number(srv.subtotal).toFixed(2)}
+                      </p>
                       <p className="text-[10px] text-slate-400">
                         {srv.cantidad} x L {Number(srv.precio_unitario).toFixed(2)}
                       </p>
                     </td>
+
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button
@@ -345,6 +619,7 @@ function ServiciosRealizadosContent() {
                         >
                           <Edit2 className="h-4 w-4" />
                         </button>
+
                         <button
                           onClick={() => handleDelete(srv.id_orden_servicio)}
                           className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600 transition-colors"
@@ -361,14 +636,18 @@ function ServiciosRealizadosContent() {
           </table>
         </div>
       </div>
+
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-scale-in my-6 max-h-[calc(100vh-3rem)] flex flex-col">
+          <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-scale-in my-6 max-h-[calc(100vh-3rem)] flex flex-col">
             <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
               <h2 className="text-xl font-black text-slate-800 flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-orange-600" />
-                {modalMode === 'create' ? 'Registrar Servicios' : 'Editar / Agregar Servicios'}
+                {modalMode === 'create'
+                  ? 'Registrar Trabajo'
+                  : 'Editar / Agregar Trabajo'}
               </h2>
+
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-2 hover:bg-slate-100 rounded-full transition-colors"
@@ -376,43 +655,60 @@ function ServiciosRealizadosContent() {
                 <X className="h-5 w-5 text-slate-400" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+
+            <form
+              onSubmit={handleSubmit}
+              className="p-6 space-y-5 overflow-y-auto flex-1 min-h-0"
+            >
               {formError && (
                 <div className="p-3 bg-red-50 text-red-700 text-xs rounded-xl border border-red-100">
                   {formError}
                 </div>
               )}
+
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Orden</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                  Orden
+                </label>
+
                 <select
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm"
                   value={ordenId}
-                  onChange={e => setOrdenId(e.target.value)}
+                  onChange={(e) => setOrdenId(e.target.value)}
                   disabled={modalMode === 'edit'}
                 >
-                  {ordenes.map(o => (
+                  {ordenes.map((o) => (
                     <option key={o.id_orden} value={o.id_orden}>
                       Orden #{o.id_orden} - {o.vehiculo.placa}
                     </option>
                   ))}
                 </select>
+
                 {selectedOrdenData && (
                   <div className="mt-3 bg-orange-50 border border-orange-100 rounded-xl p-3 text-xs">
                     <p className="font-bold text-slate-700">
                       Cliente: {selectedOrdenData.vehiculo.cliente.usuario.nombre}
                     </p>
+
                     <p className="text-slate-500 mt-1">
-                      Vehículo: {selectedOrdenData.vehiculo.marca} {selectedOrdenData.vehiculo.modelo} - {selectedOrdenData.vehiculo.placa}
+                      Vehículo: {selectedOrdenData.vehiculo.marca}{' '}
+                      {selectedOrdenData.vehiculo.modelo} -{' '}
+                      {selectedOrdenData.vehiculo.placa}
                     </p>
+
                     <p className="text-slate-500 mt-1">
                       Estado: {selectedOrdenData.estado_actual.nombre_estado}
                     </p>
                   </div>
                 )}
               </div>
+
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-slate-500 uppercase">Servicios</p>
+                  <p className="text-xs font-bold text-slate-500 uppercase">
+                    Servicios
+                  </p>
+
                   <button
                     type="button"
                     onClick={addItem}
@@ -422,57 +718,81 @@ function ServiciosRealizadosContent() {
                     Agregar servicio
                   </button>
                 </div>
+
                 {items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-3 items-end bg-slate-50 border border-slate-200 rounded-2xl p-3">
+                  <div
+                    key={index}
+                    className="grid grid-cols-12 gap-3 items-end bg-slate-50 border border-slate-200 rounded-2xl p-3"
+                  >
                     <div className="col-span-12 md:col-span-5">
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
                         Servicio
                       </label>
+
                       <select
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm"
                         value={item.id_servicio}
-                        onChange={e => updateItem(index, 'id_servicio', e.target.value)}
+                        onChange={(e) =>
+                          updateItem(index, 'id_servicio', e.target.value)
+                        }
                       >
-                        {catalogoServicios.map(s => (
+                        {catalogoServicios.map((s) => (
                           <option key={s.id_servicio} value={s.id_servicio}>
                             {s.nombre_servicio}
                           </option>
                         ))}
                       </select>
                     </div>
+
                     <div className="col-span-6 md:col-span-2">
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
                         Cantidad
                       </label>
+
                       <input
                         type="number"
                         min="1"
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm"
                         value={item.cantidad}
-                        onChange={e => updateItem(index, 'cantidad', e.target.value)}
+                        onChange={(e) =>
+                          updateItem(index, 'cantidad', e.target.value)
+                        }
                       />
                     </div>
+
                     <div className="col-span-6 md:col-span-2">
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
                         Precio
                       </label>
+
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm"
                         value={item.precio_unitario}
-                        onChange={e => updateItem(index, 'precio_unitario', e.target.value)}
+                        onChange={(e) =>
+                          updateItem(index, 'precio_unitario', e.target.value)
+                        }
                       />
                     </div>
+
                     <div className="col-span-10 md:col-span-2">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase">Subtotal</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">
+                        Subtotal
+                      </p>
                       <p className="text-sm font-black text-orange-600">
-                        L {(Number(item.cantidad || 0) * Number(item.precio_unitario || 0)).toFixed(2)}
+                        L{' '}
+                        {(
+                          Number(item.cantidad || 0) *
+                          Number(item.precio_unitario || 0)
+                        ).toFixed(2)}
                       </p>
                     </div>
+
                     <div className="col-span-2 md:col-span-1 flex justify-end">
-                      {((modalMode === 'create' && items.length > 1) || (modalMode === 'edit' && index > 0)) && (
+                      {((modalMode === 'create' && items.length > 1) ||
+                        (modalMode === 'edit' && index > 0)) && (
                         <button
                           type="button"
                           onClick={() => removeItem(index)}
@@ -485,32 +805,204 @@ function ServiciosRealizadosContent() {
                   </div>
                 ))}
               </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
+                    <Package className="h-4 w-4 text-orange-600" />
+                    Repuestos usados
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={addRepuestoItem}
+                    className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Agregar repuesto
+                  </button>
+                </div>
+
+                {repuestosItems.length === 0 ? (
+                  <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-4 text-xs text-slate-400">
+                    No has agregado repuestos. Si este trabajo usa productos del
+                    inventario, agrégalos aquí para descontar stock automáticamente.
+                  </div>
+                ) : (
+                  repuestosItems.map((item, index) => {
+                    const stockDisponible = getStockRepuesto(item.id_repuesto)
+                    const stockInsuficiente =
+                      item.id_repuesto && Number(item.cantidad) > stockDisponible
+
+                    return (
+                      <div
+                        key={index}
+                        className="grid grid-cols-12 gap-3 items-end bg-slate-50 border border-slate-200 rounded-2xl p-3"
+                      >
+                        <div className="col-span-12 md:col-span-4">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                            Repuesto
+                          </label>
+
+                          <select
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+                            value={item.id_repuesto}
+                            onChange={(e) =>
+                              updateRepuestoItem(index, 'id_repuesto', e.target.value)
+                            }
+                          >
+                            {catalogoRepuestos.map((r) => (
+                              <option key={r.id_repuesto} value={r.id_repuesto}>
+                                {r.nombre_repuesto}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="col-span-6 md:col-span-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                            Cantidad
+                          </label>
+
+                          <input
+                            type="number"
+                            min="1"
+                            className={`w-full px-3 py-2 bg-white border rounded-xl text-sm ${
+                              stockInsuficiente
+                                ? 'border-red-300 focus:border-red-500'
+                                : 'border-slate-200'
+                            }`}
+                            value={item.cantidad}
+                            onChange={(e) =>
+                              updateRepuestoItem(index, 'cantidad', e.target.value)
+                            }
+                          />
+
+                          {stockInsuficiente && (
+                            <p className="text-[10px] text-red-600 font-bold mt-1">
+                              Stock insuficiente
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="col-span-6 md:col-span-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                            Precio
+                          </label>
+
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm"
+                            value={item.precio_unitario}
+                            onChange={(e) =>
+                              updateRepuestoItem(
+                                index,
+                                'precio_unitario',
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+
+                        <div className="col-span-6 md:col-span-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">
+                            Stock
+                          </p>
+                          <p
+                            className={`text-sm font-black ${
+                              stockDisponible <= 0
+                                ? 'text-red-600'
+                                : stockDisponible <= 5
+                                  ? 'text-amber-600'
+                                  : 'text-slate-700'
+                            }`}
+                          >
+                            {stockDisponible}
+                          </p>
+                        </div>
+
+                        <div className="col-span-4 md:col-span-1">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase">
+                            Subtotal
+                          </p>
+                          <p className="text-sm font-black text-orange-600">
+                            L{' '}
+                            {(
+                              Number(item.cantidad || 0) *
+                              Number(item.precio_unitario || 0)
+                            ).toFixed(2)}
+                          </p>
+                        </div>
+
+                        <div className="col-span-2 md:col-span-1 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => removeRepuestoItem(index)}
+                            className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Observaciones</label>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
+                  Observaciones
+                </label>
+
                 <textarea
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm min-h-[90px]"
                   value={observaciones}
-                  onChange={e => setObservaciones(e.target.value)}
+                  onChange={(e) => setObservaciones(e.target.value)}
                   placeholder="Observaciones generales del trabajo realizado..."
                 />
               </div>
+
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-500 font-semibold">Subtotal servicios</span>
-                  <span className="font-bold text-slate-800">L {subtotalServicios.toFixed(2)}</span>
+                  <span className="text-slate-500 font-semibold">
+                    Subtotal servicios
+                  </span>
+                  <span className="font-bold text-slate-800">
+                    L {subtotalServicios.toFixed(2)}
+                  </span>
                 </div>
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-semibold">
+                    Subtotal repuestos
+                  </span>
+                  <span className="font-bold text-slate-800">
+                    L {subtotalRepuestos.toFixed(2)}
+                  </span>
+                </div>
+
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500 font-semibold">ISV 15%</span>
-                  <span className="font-bold text-slate-800">L {impuesto.toFixed(2)}</span>
+                  <span className="font-bold text-slate-800">
+                    L {impuesto.toFixed(2)}
+                  </span>
                 </div>
+
                 <div className="flex justify-between text-lg border-t border-slate-200 pt-2">
                   <span className="font-black text-slate-800">Total estimado</span>
-                  <span className="font-black text-orange-600">L {totalFactura.toFixed(2)}</span>
+                  <span className="font-black text-orange-600">
+                    L {totalFactura.toFixed(2)}
+                  </span>
                 </div>
+
                 <p className="text-[10px] text-slate-400">
-                  Al guardar, se registrarán los servicios y se generará o actualizará la factura de la orden.
+                  Al guardar, se registrarán los servicios, se descontará el stock de
+                  repuestos usados y se generará o actualizará la factura de la orden.
                 </p>
               </div>
+
               <div className="flex gap-3 pt-4 sticky bottom-0 bg-white border-t border-slate-100 -mx-6 -mb-6 px-6 py-4">
                 <button
                   type="button"
@@ -519,6 +1011,7 @@ function ServiciosRealizadosContent() {
                 >
                   Cancelar
                 </button>
+
                 <button
                   type="submit"
                   disabled={formSubmitting}
@@ -528,8 +1021,8 @@ function ServiciosRealizadosContent() {
                     ? 'Guardando...'
                     : modalMode === 'create'
                       ? 'Guardar y generar factura'
-                      : items.length > 1
-                        ? 'Actualizar y agregar servicios'
+                      : repuestosItems.length > 0 || items.length > 1
+                        ? 'Actualizar trabajo y factura'
                         : 'Actualizar servicio'}
                 </button>
               </div>
@@ -540,9 +1033,16 @@ function ServiciosRealizadosContent() {
     </div>
   )
 }
+
 export default function ServiciosRealizadosPage() {
   return (
-    <Suspense fallback={<div className="p-20 text-center text-slate-400">Cargando aplicación...</div>}>
+    <Suspense
+      fallback={
+        <div className="p-20 text-center text-slate-400">
+          Cargando aplicación...
+        </div>
+      }
+    >
       <ServiciosRealizadosContent />
     </Suspense>
   )

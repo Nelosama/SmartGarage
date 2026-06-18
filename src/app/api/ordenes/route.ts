@@ -3,86 +3,173 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+
+const ESTADOS_ORDEN_NO_ACTIVAS = [
+  'Listo para entrega',
+  'Listo para entregar',
+  'Entregado',
+  'Cancelado',
+]
+
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     const user = session.user as { id_rol: number; id_usuario: string }
+    const roleId = Number(user.id_rol)
+
     const { searchParams } = new URL(request.url)
+
     const vehiculoIdParam = searchParams.get('vehiculoId')
     const query = searchParams.get('q') || ''
     const estadoIdParam = searchParams.get('estadoId')
+    const soloActivasParam = searchParams.get('soloActivas') || searchParams.get('activas')
+
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
+
     const andConditions: Prisma.OrdenTrabajoWhereInput[] = []
-    if (user.id_rol === 3) {
-      const mecanico = await prisma.mecanico.findUnique({
-        where: { id_usuario: parseInt(user.id_usuario) },
+
+    /*
+      Regla importante:
+      - Los mecánicos solo deben ver órdenes activas.
+      - Esto afecta los menús de selección en alertas, diagnósticos y servicios realizados.
+      - Si una orden ya está "Listo para entrega", "Listo para entregar", "Entregado" o "Cancelado",
+        ya no aparecerá para el mecánico.
+    */
+    const debeFiltrarSoloActivas =
+      roleId === 3 || soloActivasParam === 'true' || soloActivasParam === '1'
+
+    if (debeFiltrarSoloActivas) {
+      andConditions.push({
+        estado_actual: {
+          is: {
+            nombre_estado: {
+              notIn: ESTADOS_ORDEN_NO_ACTIVAS,
+            },
+          },
+        },
       })
+    }
+
+    if (roleId === 3) {
+      const mecanico = await prisma.mecanico.findUnique({
+        where: {
+          id_usuario: parseInt(user.id_usuario),
+        },
+      })
+
       if (mecanico) {
         andConditions.push({
           OR: [
-            { id_mecanico: mecanico.id_mecanico },
-            { id_mecanico: null },
+            {
+              id_mecanico: mecanico.id_mecanico,
+            },
+            {
+              id_mecanico: null,
+            },
           ],
         })
       } else {
         return NextResponse.json([])
       }
     }
-    if (user.id_rol === 4) {
+
+    if (roleId === 4) {
       const cliente = await prisma.cliente.findUnique({
-        where: { id_usuario: parseInt(user.id_usuario) },
+        where: {
+          id_usuario: parseInt(user.id_usuario),
+        },
       })
+
       if (cliente) {
-        andConditions.push({ id_cliente: cliente.id_cliente })
+        andConditions.push({
+          id_cliente: cliente.id_cliente,
+        })
       } else {
         return NextResponse.json([])
       }
     }
+
     if (vehiculoIdParam) {
       const id_vehiculo = parseInt(vehiculoIdParam, 10)
+
       if (!isNaN(id_vehiculo)) {
-        andConditions.push({ id_vehiculo })
+        andConditions.push({
+          id_vehiculo,
+        })
       }
     }
+
     if (estadoIdParam) {
       const id_estado_actual = parseInt(estadoIdParam, 10)
+
       if (!isNaN(id_estado_actual)) {
-        andConditions.push({ id_estado_actual })
+        andConditions.push({
+          id_estado_actual,
+        })
       }
     }
+
     if (query) {
       andConditions.push({
         OR: [
-          { motivo_ingreso: { contains: query, mode: 'insensitive' } },
+          {
+            motivo_ingreso: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
           {
             vehiculo: {
               OR: [
-                { placa: { contains: query, mode: 'insensitive' } },
-                { marca: { contains: query, mode: 'insensitive' } },
-                { modelo: { contains: query, mode: 'insensitive' } },
+                {
+                  placa: {
+                    contains: query,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  marca: {
+                    contains: query,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  modelo: {
+                    contains: query,
+                    mode: 'insensitive',
+                  },
+                },
               ],
             },
           },
           {
             cliente: {
               usuario: {
-                nombre: { contains: query, mode: 'insensitive' },
+                nombre: {
+                  contains: query,
+                  mode: 'insensitive',
+                },
               },
             },
           },
         ],
       })
     }
+
     const whereClause: Prisma.OrdenTrabajoWhereInput =
       andConditions.length > 0 ? { AND: andConditions } : {}
-    /* OPTIMIZACIÓN: Paginación y selección de campos para evitar transferir datos redundantes de usuarios/clientes */
+
     const ordenes = await prisma.ordenTrabajo.findMany({
       where: whereClause,
       take: limit,
-      skip: skip,
+      skip,
       select: {
         id_orden: true,
         id_cliente: true,
@@ -132,12 +219,17 @@ export async function GET(request: Request) {
           },
         },
       },
-      orderBy: { fecha_ingreso: 'desc' },
+      orderBy: {
+        fecha_ingreso: 'desc',
+      },
     })
+
     return NextResponse.json(ordenes)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+
     console.error('API Error /api/ordenes:', error)
+
     return NextResponse.json(
       {
         error: 'Error al obtener las órdenes',
@@ -147,15 +239,24 @@ export async function GET(request: Request) {
     )
   }
 }
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+
+    if (!session) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
     const user = session.user as { id_rol: number; id_usuario: string }
-    if (user.id_rol !== 1 && user.id_rol !== 2) {
+    const roleId = Number(user.id_rol)
+
+    if (roleId !== 1 && roleId !== 2) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
+
     const body = await request.json()
+
     const {
       id_cliente,
       id_vehiculo,
@@ -168,6 +269,7 @@ export async function POST(request: Request) {
       fecha_ingreso,
       fecha_estimada_entrega,
     } = body
+
     if (
       !id_cliente ||
       !id_vehiculo ||
@@ -175,8 +277,12 @@ export async function POST(request: Request) {
       kilometraje_ingreso === undefined ||
       !motivo_ingreso
     ) {
-      return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Faltan campos obligatorios' },
+        { status: 400 }
+      )
     }
+
     const orden = await prisma.$transaction(async (tx) => {
       const nuevaOrden = await tx.ordenTrabajo.create({
         data: {
@@ -211,6 +317,7 @@ export async function POST(request: Request) {
           },
         },
       })
+
       await tx.historialEstadoOrden.create({
         data: {
           id_orden: nuevaOrden.id_orden,
@@ -219,12 +326,16 @@ export async function POST(request: Request) {
           comentario: `Orden creada con estado: ${nuevaOrden.estado_actual.nombre_estado}`,
         },
       })
+
       return nuevaOrden
     })
+
     return NextResponse.json(orden, { status: 201 })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+
     console.error('API Error /api/ordenes POST:', error)
+
     return NextResponse.json(
       {
         error: 'Error al crear la orden',
